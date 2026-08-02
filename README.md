@@ -31,8 +31,12 @@ From then on the cron takes over.
 | `/status` | counters and last run time |
 | `/cancel` | abort the `/add` dialog |
 
-Every alert carries three buttons: **❤️ Save**, **🚫 Hide seller**,
-**🔕 Mute** (silences that search without deleting it).
+Every alert arrives as an album of up to 5 photos, followed by one message with
+the details and three buttons: **❤️ Save**, **🚫 Hide seller**, **🔕 Mute**
+(silences that search without deleting it). Telegram rejects `reply_markup` on
+`sendMediaGroup`, which is why the album and the buttons are two messages —
+keeping the caption out of the album puts text and actions together. Listings
+with a single photo (bazos.sk) stay one message.
 
 ### Two ways to run the bot
 
@@ -147,7 +151,11 @@ main.py                        orchestrator
 
 ## Normalized schema
 
-`{id, source, brand, model, year, mileage_km, price_eur, fuel, gearbox, url, image_url, dealer_id, dealer_name, first_seen}`
+`{id, source, brand, model, year, mileage_km, price_eur, fuel, gearbox, url, image_url, images, title, dealer_id, dealer_name, first_seen}`
+
+`images` is a JSON array of up to 5 photo urls (`image_url` stays as the cover
+for one-photo fallbacks). bazos.sk only exposes a thumbnail in its result list —
+more would cost one extra request per ad.
 
 `dealer_id`/`dealer_name` back the "Hide seller" button. On mobile.de **every
 private seller shares one bucket `sellerId`** (7723851 today), so only real

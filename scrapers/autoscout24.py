@@ -10,7 +10,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-from .base import BaseScraper, BotWallError, Listing
+from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing
 
 log = logging.getLogger(__name__)
 
@@ -69,9 +69,9 @@ class AutoScout24Scraper(BaseScraper):
         v = raw.get("vehicle") or {}
         tracking = raw.get("tracking") or {}
         seller = raw.get("seller") or {}
-        images = raw.get("images") or []
         # thumbnails come as .../250x188.webp - ask for something Telegram-worthy
-        image = images[0].replace("/250x188.webp", "/640x480.webp") if images else None
+        images = [i.replace("/250x188.webp", "/640x480.webp")
+                  for i in (raw.get("images") or [])][:MAX_IMAGES]
         listing_id = str(raw.get("crossReferenceId") or raw.get("id"))
         return Listing(
             id=f"{self.source}:{listing_id}",
@@ -84,7 +84,8 @@ class AutoScout24Scraper(BaseScraper):
             fuel=self.norm_fuel(v.get("fuel")),
             gearbox=self.norm_gearbox(v.get("transmission")),
             url="https://www.autoscout24.com" + (raw.get("url") or ""),
-            image_url=image,
+            image_url=images[0] if images else None,
+            images=images,
             dealer_id=str(seller.get("id")) if seller.get("id") else None,
             dealer_name=seller.get("companyName") or seller.get("contactName"),
         )

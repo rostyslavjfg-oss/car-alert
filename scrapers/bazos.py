@@ -98,7 +98,9 @@ class BazosScraper(BaseScraper):
             fuel=self._word(text, FUEL_WORDS),
             gearbox=self._word(text, GEARBOX_WORDS),
             url="https://auto.bazos.sk" + href if href.startswith("/") else href,
+            # the result list holds one thumbnail; more would cost a request per ad
             image_url=image.get("src") if image else None,
+            images=[image["src"]] if image and image.get("src") else [],
             title=title,
             dealer_id=None,        # bazos exposes no stable seller id in the result list
             dealer_name=None,

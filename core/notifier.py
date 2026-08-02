@@ -1,12 +1,13 @@
 """Telegram notifications - one message per listing, photo + caption + buttons."""
 
 import asyncio
+import json
 import logging
 import os
 from dataclasses import dataclass, field
 from typing import Optional
 
-from telegram import Bot
+from telegram import Bot, InputMediaPhoto
 from telegram.error import TelegramError
 
 from .telegram_app import listing_keyboard
@@ -15,6 +16,7 @@ log = logging.getLogger(__name__)
 
 MAX_PER_RUN = 20
 SEND_DELAY = 1.2          # stay under Telegram's per-chat flood limits
+ALBUM_DELAY = 2.5         # albums count as several messages, so pause longer
 
 FUEL_LABEL = {"diesel": "дизель", "petrol": "бензин", "hybrid": "гибрид", "electric": "электро"}
 GEARBOX_LABEL = {"manual": "механика", "automatic": "автомат"}
@@ -35,6 +37,20 @@ class Alert:
     @property
     def listing_id(self) -> str:
         return self.row["id"]
+
+    @property
+    def photos(self) -> list:
+        """Listing rows carry a list; rows read back from sqlite carry JSON."""
+        raw = self.row.get("images")
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except ValueError:
+                raw = []
+        photos = [p for p in (raw or []) if p]
+        if not photos and self.row.get("image_url"):
+            photos = [self.row["image_url"]]
+        return photos[:10]                    # Telegram album hard limit
 
 
 def _fmt(n, suffix=""):
@@ -90,6 +106,47 @@ class Notifier:
         sent = [a for a in to_send if a.sent]
         return sent, deferred + [a for a in to_send if not a.sent]
 
+    async def _send_one(self, bot: Bot, chat_id, alert) -> float:
+        """Album + a buttons message, or a single photo when there is only one.
+
+        sendMediaGroup rejects reply_markup, so an album cannot carry the
+        buttons - they follow in their own short message.
+        """
+        caption = build_caption(alert.row, alert.old_price)
+        dealer_id = alert.row.get("dealer_id")
+        keyboard = listing_keyboard(
+            alert.listing_id,
+            dealer_key=f"{alert.row.get('source')}:{dealer_id}" if dealer_id else None,
+            search_id=alert.search_id)
+        photos = alert.photos
+
+        if len(photos) > 1:
+            try:
+                # photos first, then the text that carries the buttons - keeping the
+                # caption out of the album puts description and actions in one message
+                await bot.send_media_group(chat_id, [InputMediaPhoto(p) for p in photos],
+                                           disable_notification=True)
+                await bot.send_message(chat_id, caption, reply_markup=keyboard,
+                                       disable_web_page_preview=True)
+                alert.sent = True
+                return ALBUM_DELAY
+            except TelegramError as exc:
+                log.warning("album failed for %s (%s), falling back to one photo",
+                            alert.listing_id, exc)
+
+        if photos:
+            try:
+                await bot.send_photo(chat_id, photos[0], caption=caption,
+                                     reply_markup=keyboard)
+                alert.sent = True
+                return SEND_DELAY
+            except TelegramError as exc:                 # dead or rejected image url
+                log.warning("photo failed for %s (%s), sending text",
+                            alert.listing_id, exc)
+        await bot.send_message(chat_id, caption, reply_markup=keyboard)
+        alert.sent = True
+        return SEND_DELAY
+
     async def _send_all(self, alerts: list) -> None:
         async with Bot(self.token) as bot:
             for alert in alerts:
@@ -97,22 +154,9 @@ class Notifier:
                 if not chat_id:
                     log.error("no chat id for listing %s", alert.listing_id)
                     continue
-                caption = build_caption(alert.row, alert.old_price)
-                dealer_id = alert.row.get("dealer_id")
-                keyboard = listing_keyboard(
-                    alert.listing_id,
-                    dealer_key=f"{alert.row.get('source')}:{dealer_id}" if dealer_id else None,
-                    search_id=alert.search_id)
                 try:
-                    if alert.row.get("image_url"):
-                        try:
-                            await bot.send_photo(chat_id, alert.row["image_url"],
-                                                 caption=caption, reply_markup=keyboard)
-                        except TelegramError:            # dead or rejected image URL
-                            await bot.send_message(chat_id, caption, reply_markup=keyboard)
-                    else:
-                        await bot.send_message(chat_id, caption, reply_markup=keyboard)
-                    alert.sent = True
+                    delay = await self._send_one(bot, chat_id, alert)
                 except TelegramError as exc:
                     log.error("telegram send failed for %s: %s", alert.listing_id, exc)
-                await asyncio.sleep(SEND_DELAY)
+                    delay = SEND_DELAY
+                await asyncio.sleep(delay)

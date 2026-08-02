@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS listings (
     gearbox     TEXT,
     url         TEXT,
     image_url   TEXT,
+    images      TEXT,                      -- JSON array of photo urls
     title       TEXT,
     dealer_id   TEXT,
     dealer_name TEXT,
@@ -107,6 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_searches_chat ON searches(chat_id);
 
 # columns added after the first release - applied to existing db files on open
 MIGRATIONS = [
+    ("listings", "images", "TEXT"),
     ("listings", "title", "TEXT"),
     ("listings", "dealer_id", "TEXT"),
     ("listings", "dealer_name", "TEXT"),
@@ -174,23 +176,26 @@ class Db:
 
     def upsert(self, listing) -> None:
         ts = now()
+        row = listing.as_dict()
+        row["images"] = json.dumps(row.get("images") or [], ensure_ascii=False)
         self.conn.execute(
             """INSERT INTO listings (id, source, brand, model, year, mileage_km, price_eur,
-                                     fuel, gearbox, url, image_url, title, dealer_id,
-                                     dealer_name, first_seen, last_seen)
+                                     fuel, gearbox, url, image_url, images, title,
+                                     dealer_id, dealer_name, first_seen, last_seen)
                VALUES (:id, :source, :brand, :model, :year, :mileage_km, :price_eur,
-                       :fuel, :gearbox, :url, :image_url, :title, :dealer_id,
+                       :fuel, :gearbox, :url, :image_url, :images, :title, :dealer_id,
                        :dealer_name, :ts, :ts)
                ON CONFLICT(id) DO UPDATE SET
                    price_eur = excluded.price_eur,
                    mileage_km = excluded.mileage_km,
                    url = excluded.url,
                    image_url = excluded.image_url,
+                   images = excluded.images,
                    title = excluded.title,
                    dealer_id = excluded.dealer_id,
                    dealer_name = excluded.dealer_name,
                    last_seen = excluded.last_seen""",
-            {**listing.as_dict(), "ts": ts},
+            {**row, "ts": ts},
         )
 
     # --- notifications ----------------------------------------------------

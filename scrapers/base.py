@@ -5,7 +5,7 @@ import random
 import re
 import time
 import unicodedata
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Optional
 
 import requests
@@ -21,6 +21,7 @@ USER_AGENTS = [
 ]
 
 MIN_DELAY, MAX_DELAY = 2.0, 4.0
+MAX_IMAGES = 5              # Telegram albums hold 10; 5 is enough to judge a car
 
 # autoscout24 single-letter country codes -> ISO used by mobile.de
 COUNTRY_MAP = {"D": "DE", "A": "AT", "B": "BE", "NL": "NL", "L": "LU",
@@ -51,7 +52,8 @@ class Listing:
     fuel: Optional[str]
     gearbox: Optional[str]
     url: str
-    image_url: Optional[str]
+    image_url: Optional[str]            # cover photo, kept for one-photo fallbacks
+    images: list = field(default_factory=list)   # up to MAX_IMAGES, sent as an album
     title: Optional[str] = None         # raw ad headline, used where model is fuzzy
     dealer_id: Optional[str] = None     # seller, for the "hide dealer" button
     dealer_name: Optional[str] = None

@@ -9,7 +9,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-from .base import BaseScraper, BotWallError, Listing
+from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing
 
 log = logging.getLogger(__name__)
 
@@ -49,10 +49,15 @@ class WillhabenScraper(BaseScraper):
 
     def _to_listing(self, ad: dict) -> Listing:
         at = self._attrs(ad)
-        images = (at.get("ALL_IMAGE_URLS") or "").split(";")
-        image = images[0] if images and images[0] else None
-        if image and not image.startswith("http"):
-            image = "https://cache.willhaben.at/mmo/" + image.lstrip("/")
+        images = []
+        for raw_image in (at.get("ALL_IMAGE_URLS") or "").split(";"):
+            raw_image = raw_image.strip()
+            if not raw_image:
+                continue
+            images.append(raw_image if raw_image.startswith("http")
+                          else "https://cache.willhaben.at/mmo/" + raw_image.lstrip("/"))
+            if len(images) >= MAX_IMAGES:
+                break
         seo = at.get("SEO_URL") or ""
         is_private = str(at.get("ISPRIVATE", "0")) == "1"
         return Listing(
@@ -67,7 +72,8 @@ class WillhabenScraper(BaseScraper):
             gearbox=self.norm_gearbox(at.get("TRANSMISSION_RESOLVED")),
             url="https://www.willhaben.at/iad/" + seo.lstrip("/") if seo else
                 f"https://www.willhaben.at/iad/object?adId={ad.get('id')}",
-            image_url=image,
+            image_url=images[0] if images else None,
+            images=images,
             title=ad.get("description") or at.get("HEADING"),
             dealer_id=None if is_private else at.get("ORGID"),
             dealer_name=at.get("HEADING") if is_private else at.get("ORGNAME"),

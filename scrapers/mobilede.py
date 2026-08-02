@@ -12,7 +12,7 @@ way to reach deeper results, so max_pages is turned into one larger request.
 
 import logging
 
-from .base import BaseScraper, BotWallError, Listing, COUNTRY_MAP
+from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing, COUNTRY_MAP
 
 log = logging.getLogger(__name__)
 
@@ -80,16 +80,16 @@ class MobileDeScraper(BaseScraper):
         return params
 
     @staticmethod
-    def _image_url(raw: dict):
-        images = raw.get("images") or []
-        if not images:
-            return None
-        # uri looks like "m.mobile.de/yams-proxy/img.classistatic.de/api/v1/mo-prod/images/42/<uuid>"
-        uri = (images[0].get("uri") or "").lstrip("/")
-        if not uri:
-            return None
-        _, _, path = uri.partition("yams-proxy/")
-        return f"https://{path or uri}?rule=mo-640.jpg"
+    def _images(raw: dict) -> list:
+        """uri: "m.mobile.de/yams-proxy/img.classistatic.de/api/v1/.../<uuid>" -> real url"""
+        out = []
+        for image in (raw.get("images") or [])[:MAX_IMAGES]:
+            uri = (image.get("uri") or "").lstrip("/")
+            if not uri:
+                continue
+            _, _, path = uri.partition("yams-proxy/")
+            out.append(f"https://{path or uri}?rule=mo-640.jpg")
+        return out
 
     def _to_listing(self, raw: dict) -> Listing:
         attr = raw.get("attr") or {}
@@ -97,6 +97,7 @@ class MobileDeScraper(BaseScraper):
         # every private seller shares one bucket sellerId (7723851 today), so only
         # real dealers get an id the user can block
         contact = raw.get("contact") or {}
+        images = self._images(raw)
         dealer_id = (str(raw["sellerId"])
                      if raw.get("sellerId") and contact.get("enumType") == "DEALER" else None)
         return Listing(
@@ -110,7 +111,8 @@ class MobileDeScraper(BaseScraper):
             fuel=self.norm_fuel(attr.get("ft")),
             gearbox=self.norm_gearbox(attr.get("tr")),
             url=raw.get("url") or f"https://suchen.mobile.de/auto-inserat/{raw.get('id')}.html",
-            image_url=self._image_url(raw),
+            image_url=images[0] if images else None,
+            images=images,
             dealer_id=dealer_id,
             dealer_name=contact.get("name") or raw.get("st"),
         )
