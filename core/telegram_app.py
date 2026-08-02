@@ -11,7 +11,8 @@ Never poll from both at once - Telegram answers the second one with 409.
 
 import html
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
+                      ReplyKeyboardMarkup, Update)
 from telegram.constants import ParseMode
 from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
                           ContextTypes, MessageHandler, filters)
@@ -38,28 +39,34 @@ HELP = """<b>Автоподбор</b> — слежу за объявлениям
 Новые объявления приходят сами, каждые 30 минут."""
 
 # /add dialog: step -> (question, draft key, parser)
-SKIP_WORDS = {"-", "любой", "любая", "неважно", "пропустить", "any", "skip", "no"}
+SKIP_WORDS = {"-", "любой", "любая", "неважно", "пропустить", "— пропустить",
+              "any", "skip", "no"}
+
+
+def _is_skip(text: str) -> bool:
+    return text.strip().lower() in SKIP_WORDS
 
 
 def _opt_int(text: str):
-    text = text.strip().replace(" ", "").replace(".", "")
-    if text.lower() in SKIP_WORDS:
+    # check for a skip *before* stripping spaces: "— пропустить" has one
+    if _is_skip(text):
         return None
-    if not text.isdigit():
+    digits = text.strip().replace(" ", "").replace(".", "").replace("\u00a0", "")
+    if not digits.isdigit():
         raise ValueError("нужно число или «-»")
-    return int(text)
+    return int(digits)
 
 
 def _opt_text(text: str):
-    return None if text.strip().lower() in SKIP_WORDS else text.strip()
+    return None if _is_skip(text) else text.strip()
 
 
 def _choice(options: dict):
     """options maps every accepted spelling (ru and en) to the canonical value."""
     def parse(text: str):
-        value = text.strip().lower()
-        if value in SKIP_WORDS:
+        if _is_skip(text):
             return None
+        value = text.strip().lower()
         if value not in options:
             raise ValueError("выбери одно из: " + ", ".join(dict.fromkeys(options)) + ", либо «-»")
         return options[value]
@@ -67,9 +74,9 @@ def _choice(options: dict):
 
 
 def _countries(text: str):
-    value = text.strip().upper()
-    if value.lower() in SKIP_WORDS:
+    if _is_skip(text):
         return ["D"]
+    value = text.strip().upper()
     codes = [c.strip() for c in value.replace(";", ",").split(",") if c.strip()]
     return codes or ["D"]
 
@@ -129,6 +136,37 @@ def search_keyboard(profile: dict) -> InlineKeyboardMarkup:
     ]])
 
 
+# --- persistent keyboard under the input field -------------------------------
+
+BTN_ADD = "\u2795 Новый поиск"
+BTN_LIST = "\U0001f4cb Мои поиски"
+BTN_FAV = "❤️ Избранное"
+BTN_RUN = "\U0001f50d Искать сейчас"
+BTN_STATUS = "\U0001f4ca Статус"
+BTN_DEALERS = "\U0001f6ab Скрытые"
+BTN_HELP = "❓ Помощь"
+BTN_CANCEL = "✖️ Отмена"
+BTN_SKIP = "— пропустить"
+
+
+def main_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [[BTN_ADD, BTN_LIST],
+         [BTN_RUN, BTN_FAV],
+         [BTN_STATUS, BTN_DEALERS, BTN_HELP]],
+        resize_keyboard=True, is_persistent=True)
+
+
+REQUIRED_STEPS = {"brand"}          # everything else may be skipped
+
+
+def dialog_keyboard(step: str = "") -> ReplyKeyboardMarkup:
+    """Shown while /add runs - skipping should not need typing, except for brand."""
+    rows = [] if step in REQUIRED_STEPS else [[BTN_SKIP]]
+    return ReplyKeyboardMarkup(rows + [[BTN_CANCEL]],
+                               resize_keyboard=True, is_persistent=True)
+
+
 def listing_keyboard(listing_id: str, dealer_key=None, search_id=None) -> InlineKeyboardMarkup:
     row = [InlineKeyboardButton("❤️ В избранное", callback_data=f"fav:{listing_id}")]
     if dealer_key:
@@ -148,11 +186,13 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     _db(context).add_subscriber(chat.id, update.effective_user.username if update.effective_user else None)
     await update.message.reply_text(
-        f"Чат подключён (<code>{chat.id}</code>).\n\n{HELP}", parse_mode=ParseMode.HTML)
+        f"Чат подключён (<code>{chat.id}</code>).\n\n{HELP}",
+        parse_mode=ParseMode.HTML, reply_markup=main_keyboard())
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(HELP, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(HELP, parse_mode=ParseMode.HTML,
+                                    reply_markup=main_keyboard())
 
 
 async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -161,22 +201,32 @@ async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.add_subscriber(chat_id)
     db.set_dialog(chat_id, STEPS[0][0], {})
     await update.message.reply_text(
-        f"Новый поиск (1/{len(STEPS)}). {STEPS[0][1]}\n\n/cancel — отменить.",
-        parse_mode=ParseMode.HTML)
+        f"Новый поиск (1/{len(STEPS)}). {STEPS[0][1]}",
+        parse_mode=ParseMode.HTML, reply_markup=dialog_keyboard(STEPS[0][0]))
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _db(context).clear_dialog(update.effective_chat.id)
-    await update.message.reply_text("Отменено.")
+    await update.message.reply_text("Отменено.", reply_markup=main_keyboard())
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Only meaningful while an /add dialog is open."""
+    """Keyboard taps first, then the /add dialog, then a nudge to /help."""
+    text = (update.message.text or "").strip()
+    handler = BUTTONS.get(text)
+    if handler:
+        # a tap must win over an open dialog, otherwise "Отмена" becomes an answer
+        context.args = []
+        await handler(update, context)
+        return
+
     db = _db(context)
     chat_id = update.effective_chat.id
     step, draft = db.get_dialog(chat_id)
     if not step:
-        await update.message.reply_text("Не на что отвечать. /add — создать поиск, /help — команды.")
+        await update.message.reply_text(
+            "Не на что отвечать — жми кнопку снизу или /help.",
+            reply_markup=main_keyboard())
         return
 
     index = STEP_INDEX[step]
@@ -184,16 +234,22 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         value = parse(update.message.text or "")
     except ValueError as exc:
-        await update.message.reply_text(f"{exc}. Попробуй ещё раз.")
+        await update.message.reply_text(f"{exc}. Попробуй ещё раз.",
+                                        reply_markup=dialog_keyboard(step))
         return
 
     if key == "brand":
+        if not value:
+            await update.message.reply_text("Марку пропустить нельзя — напиши её.",
+                                            reply_markup=dialog_keyboard("brand"))
+            return
         brands = context.application.bot_data.get("brands") or {}
         match = _resolve_brand(brands, value)
         if not match:
             await update.message.reply_text(
                 f"Марки «{html.escape(str(value))}» нет в справочнике. "
-                "Проверь написание и пришли ещё раз.", parse_mode=ParseMode.HTML)
+                "Проверь написание и пришли ещё раз.",
+                parse_mode=ParseMode.HTML, reply_markup=dialog_keyboard("brand"))
             return
         value = match
     draft[key] = value
@@ -202,7 +258,8 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         next_key, question, _ = STEPS[index + 1]
         db.set_dialog(chat_id, next_key, draft)
         await update.message.reply_text(f"({index + 2}/{len(STEPS)}) {question}",
-                                        parse_mode=ParseMode.HTML)
+                                        parse_mode=ParseMode.HTML,
+                                        reply_markup=dialog_keyboard(next_key))
         return
 
     db.clear_dialog(chat_id)
@@ -210,8 +267,10 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     search_id = db.add_search(chat_id, draft)
     profile = db.get_search(search_id, chat_id)
     await update.message.reply_text(
-        f"Сохранил как #{search_id}: {describe(profile)}\n\n/run — прогнать прямо сейчас.",
+        f"Сохранил как #{search_id}: {describe(profile)}",
         parse_mode=ParseMode.HTML, reply_markup=search_keyboard(profile))
+    await update.message.reply_text("Готово. Жми «Искать сейчас», чтобы не ждать полчаса.",
+                                    reply_markup=main_keyboard())
 
 
 # the UI is Russian, so people type Cyrillic and shorthands
@@ -406,6 +465,18 @@ def build_application(token: str, db: Db, brands: dict, run_scrape=None,
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
 
+
+# keyboard label -> handler; defined here because the handlers exist by now
+BUTTONS = {
+    BTN_ADD: cmd_add,
+    BTN_LIST: cmd_list,
+    BTN_FAV: cmd_fav,
+    BTN_RUN: cmd_run,
+    BTN_STATUS: cmd_status,
+    BTN_DEALERS: cmd_dealers,
+    BTN_HELP: cmd_help,
+    BTN_CANCEL: cmd_cancel,
+}
 
 BOT_COMMANDS = [
     ("add", "новый поиск"), ("list", "мои поиски"), ("del", "удалить поиск"),

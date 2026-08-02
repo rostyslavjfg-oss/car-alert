@@ -31,6 +31,14 @@ From then on the cron takes over.
 | `/status` | counters and last run time |
 | `/cancel` | abort the `/add` dialog |
 
+A persistent keyboard sits under the input field, so nothing has to be typed:
+**➕ Новый поиск · 📋 Мои поиски · 🔍 Искать сейчас · ❤️ Избранное ·
+📊 Статус · 🚫 Скрытые · ❓ Помощь**. During `/add` it is replaced by
+**— пропустить / ✖️ Отмена** (the skip button is hidden on the brand step, which
+is the one answer that cannot be skipped). A tap is handled before the dialog
+reads the message, so pressing Отмена mid-dialog cancels instead of being
+swallowed as an answer.
+
 Every alert arrives as an album of up to 5 photos, followed by one message with
 the details and three buttons: **❤️ Save**, **🚫 Hide seller**, **🔕 Mute**
 (silences that search without deleting it). Telegram rejects `reply_markup` on
