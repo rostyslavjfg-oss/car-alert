@@ -10,6 +10,8 @@ from typing import Optional
 from telegram import Bot, InputMediaPhoto
 from telegram.error import TelegramError
 
+from scrapers.base import COUNTRY_FLAG
+
 from .telegram_app import listing_keyboard
 
 log = logging.getLogger(__name__)
@@ -73,9 +75,17 @@ def build_caption(row: dict, old_price=None) -> str:
     details = [FUEL_LABEL.get(row.get("fuel"), row.get("fuel") or "?"),
                GEARBOX_LABEL.get(row.get("gearbox"), row.get("gearbox") or "?"),
                SOURCE_LABEL.get(source, source)]
-    if row.get("dealer_name"):
-        details.append(str(row["dealer_name"])[:40])
     lines.append(" | ".join(str(d) for d in details))
+
+    where = COUNTRY_FLAG.get((row.get("country") or "").upper(), row.get("country") or "")
+    if row.get("city"):
+        where = f"{where}, {row['city']}".strip(", ")
+    if row.get("damaged"):
+        where = (where + " · ⚠️ битая").strip(" ·")
+    if row.get("dealer_name"):
+        where = f"{where}\n{str(row['dealer_name'])[:45]}".strip()
+    if where:
+        lines.append(where)
     lines.append(row.get("url") or "")
     return "\n".join(lines)
 

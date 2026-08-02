@@ -60,6 +60,9 @@ class WillhabenScraper(BaseScraper):
                 break
         seo = at.get("SEO_URL") or ""
         is_private = str(at.get("ISPRIVATE", "0")) == "1"
+        condition = " ".join(str(at.get(k) or "") for k in
+                             ("CONDITION_RESOLVED", "CONDITION_REPORT")).lower()
+        damaged = any(w in condition for w in ("beschädig", "unfall", "havar", "defekt"))
         return Listing(
             id=f"{self.source}:{ad.get('id')}",
             source=self.source,
@@ -75,6 +78,9 @@ class WillhabenScraper(BaseScraper):
             image_url=images[0] if images else None,
             images=images,
             title=ad.get("description") or at.get("HEADING"),
+            country="AT",
+            city=at.get("LOCATION") or at.get("DISTRICT"),
+            damaged=damaged,
             dealer_id=None if is_private else at.get("ORGID"),
             dealer_name=at.get("HEADING") if is_private else at.get("ORGNAME"),
         )

@@ -73,6 +73,8 @@ class MobileDeScraper(BaseScraper):
             params.append(("ft", FUEL_PARAM[profile["fuel"]]))
         if profile.get("gearbox") in GEARBOX_PARAM:
             params.append(("tr", GEARBOX_PARAM[profile["gearbox"]]))
+        if profile.get("exclude_damaged", 1):
+            params.append(("dam", "false"))       # server-side: hide damaged cars
         for code in profile.get("countries") or ["D"]:
             iso = COUNTRY_MAP.get(str(code).upper())
             if iso:                    # unknown codes are dropped, not passed through
@@ -113,6 +115,10 @@ class MobileDeScraper(BaseScraper):
             url=raw.get("url") or f"https://suchen.mobile.de/auto-inserat/{raw.get('id')}.html",
             image_url=images[0] if images else None,
             images=images,
+            title=raw.get("title"),
+            country=(attr.get("cn") or "").upper() or None,
+            city=attr.get("loc"),
+            damaged=bool(raw.get("hasDamage") or raw.get("isDamageCase")),
             dealer_id=dealer_id,
             dealer_name=contact.get("name") or raw.get("st"),
         )

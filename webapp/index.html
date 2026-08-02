@@ -120,6 +120,9 @@ const esc = s => String(s == null ? "" : s).replace(/[<>&"]/g,
 
 const FUEL = {diesel:"дизель", petrol:"бензин", hybrid:"гибрид", electric:"электро"};
 const GEAR = {automatic:"автомат", manual:"механика"};
+const COUNTRY = {DE:"🇩🇪 Германия", AT:"🇦🇹 Австрия", SK:"🇸🇰 Словакия", CZ:"🇨🇿 Чехия",
+  PL:"🇵🇱 Польша", NL:"🇳🇱 Нидерланды", BE:"🇧🇪 Бельгия", LU:"🇱🇺 Люксембург",
+  IT:"🇮🇹 Италия", ES:"🇪🇸 Испания", FR:"🇫🇷 Франция", HU:"🇭🇺 Венгрия"};
 
 function param(name) {
   return new URLSearchParams(location.search).get(name) || "";
@@ -196,6 +199,8 @@ function buildCard(item) {
       <div class="price">${fmt(item.price_eur)} €</div>
       <div class="meta">${fmt(item.mileage_km)} км · ${esc(FUEL[item.fuel] || item.fuel || "?")}
         · ${esc(GEAR[item.gearbox] || item.gearbox || "?")} · ${esc(item.source || "")}</div>
+      <div class="meta">${esc(COUNTRY[item.country] || item.country || "")}${
+        item.city ? ", " + esc(item.city) : ""}</div>
       <a href="${esc(item.url || "#")}" target="_blank" rel="noopener">Открыть объявление ↗</a>
     </div>`;
   const img = el.querySelector("img");

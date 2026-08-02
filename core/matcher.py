@@ -34,6 +34,11 @@ def matches(listing, profile: dict) -> bool:
     if profile.get("price_min") and listing.price_eur and listing.price_eur < profile["price_min"]:
         return False
 
+    # damaged is dropped only when the source actually said so - an unknown
+    # value must not silently hide half of bazos, which never reports it
+    if profile.get("exclude_damaged", 1) and listing.damaged:
+        return False
+
     # unknown fuel/gearbox on the listing is not a reason to drop it
     if profile.get("fuel") and listing.fuel and listing.fuel != profile["fuel"]:
         return False

@@ -150,6 +150,8 @@ def describe(profile: dict) -> str:
         if profile.get(key):
             bits.append(VALUE_LABEL.get(profile[key], profile[key]))
     bits.append("/".join(profile.get("countries") or ["D"]))
+    if profile.get("exclude_damaged", 1):
+        bits.append("без аварий")
     flags = []
     if profile.get("paused"):
         flags.append("⏸ на паузе")

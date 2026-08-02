@@ -161,6 +161,14 @@ request with `psz = min(50·N, 200)`.
 - **Price drops** — known ads that reappear with a price ≥5 % lower trigger a
   `PRICE DROP -x%: old → new` message (once per listing per search).
 - **Hidden sellers** — blocked seller ids are filtered before matching, per chat.
+- **Damaged cars** — excluded by default (`exclude_damaged`). mobile.de filters
+  them server-side with `dam=false`; autoscout24 has no such parameter but marks
+  `isCurrentlyDamaged`, willhaben is read from its condition fields, and bazos.sk
+  only has the seller's own words. Negations are stripped before matching there,
+  because "NEBÚRANÉ" and "bez poškodenia" mean the opposite and a false positive
+  silently hides a good car. An unstated condition is never treated as damaged.
+- **Country** — every alert shows 🇩🇪/🇦🇹/🇸🇰 plus the city where the source
+  gives one.
 - **Logging** — one line per source per search:
   `fetched / new / matched / to notify`.
 

@@ -24,6 +24,12 @@ MIN_DELAY, MAX_DELAY = 2.0, 4.0
 MAX_IMAGES = 5              # Telegram albums hold 10; 5 is enough to judge a car
 
 # autoscout24 single-letter country codes -> ISO used by mobile.de
+COUNTRY_FLAG = {"DE": "🇩🇪 Германия", "AT": "🇦🇹 Австрия", "SK": "🇸🇰 Словакия",
+                "CZ": "🇨🇿 Чехия", "PL": "🇵🇱 Польша", "NL": "🇳🇱 Нидерланды",
+                "BE": "🇧🇪 Бельгия", "LU": "🇱🇺 Люксембург", "IT": "🇮🇹 Италия",
+                "ES": "🇪🇸 Испания", "FR": "🇫🇷 Франция", "HU": "🇭🇺 Венгрия",
+                "SI": "🇸🇮 Словения", "HR": "🇭🇷 Хорватия", "RO": "🇷🇴 Румыния"}
+
 COUNTRY_MAP = {"D": "DE", "A": "AT", "B": "BE", "NL": "NL", "L": "LU",
                "I": "IT", "E": "ES", "F": "FR", "SK": "SK", "CZ": "CZ", "PL": "PL"}
 
@@ -55,6 +61,9 @@ class Listing:
     image_url: Optional[str]            # cover photo, kept for one-photo fallbacks
     images: list = field(default_factory=list)   # up to MAX_IMAGES, sent as an album
     title: Optional[str] = None         # raw ad headline, used where model is fuzzy
+    country: Optional[str] = None       # ISO-2, e.g. DE / AT / SK
+    city: Optional[str] = None
+    damaged: Optional[bool] = None      # None = the source did not say
     dealer_id: Optional[str] = None     # seller, for the "hide dealer" button
     dealer_name: Optional[str] = None
     first_seen: Optional[str] = None    # filled by db on insert

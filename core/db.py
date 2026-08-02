@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS listings (
     image_url   TEXT,
     images      TEXT,                      -- JSON array of photo urls
     title       TEXT,
+    country     TEXT,
+    city        TEXT,
+    damaged     INTEGER,
     dealer_id   TEXT,
     dealer_name TEXT,
     first_seen  TEXT NOT NULL,
@@ -63,6 +66,7 @@ CREATE TABLE IF NOT EXISTS searches (
     fuel        TEXT,
     gearbox     TEXT,
     countries   TEXT DEFAULT 'D',        -- comma separated autoscout24 codes
+    exclude_damaged INTEGER NOT NULL DEFAULT 1,
     paused      INTEGER NOT NULL DEFAULT 0,
     muted       INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL,
@@ -120,6 +124,10 @@ CREATE INDEX IF NOT EXISTS idx_searches_chat ON searches(chat_id);
 MIGRATIONS = [
     ("listings", "images", "TEXT"),
     ("listings", "title", "TEXT"),
+    ("listings", "country", "TEXT"),
+    ("listings", "city", "TEXT"),
+    ("listings", "damaged", "INTEGER"),
+    ("searches", "exclude_damaged", "INTEGER NOT NULL DEFAULT 1"),
     ("listings", "dealer_id", "TEXT"),
     ("listings", "dealer_name", "TEXT"),
     ("notification_queue", "chat_id", "TEXT"),
@@ -189,13 +197,15 @@ class Db:
         ts = now()
         row = listing.as_dict()
         row["images"] = json.dumps(row.get("images") or [], ensure_ascii=False)
+        row["damaged"] = None if row.get("damaged") is None else int(row["damaged"])
         self.conn.execute(
             """INSERT INTO listings (id, source, brand, model, year, mileage_km, price_eur,
                                      fuel, gearbox, url, image_url, images, title,
-                                     dealer_id, dealer_name, first_seen, last_seen)
+                                     country, city, damaged, dealer_id, dealer_name,
+                                     first_seen, last_seen)
                VALUES (:id, :source, :brand, :model, :year, :mileage_km, :price_eur,
-                       :fuel, :gearbox, :url, :image_url, :images, :title, :dealer_id,
-                       :dealer_name, :ts, :ts)
+                       :fuel, :gearbox, :url, :image_url, :images, :title,
+                       :country, :city, :damaged, :dealer_id, :dealer_name, :ts, :ts)
                ON CONFLICT(id) DO UPDATE SET
                    price_eur = excluded.price_eur,
                    mileage_km = excluded.mileage_km,
@@ -203,6 +213,9 @@ class Db:
                    image_url = excluded.image_url,
                    images = excluded.images,
                    title = excluded.title,
+                   country = excluded.country,
+                   city = excluded.city,
+                   damaged = excluded.damaged,
                    dealer_id = excluded.dealer_id,
                    dealer_name = excluded.dealer_name,
                    last_seen = excluded.last_seen""",
@@ -246,12 +259,14 @@ class Db:
     def add_search(self, chat_id, profile: dict) -> int:
         cur = self.conn.execute(
             """INSERT INTO searches (chat_id, name, brand, model, year_from, price_min,
-                                     price_max, mileage_max, fuel, gearbox, countries, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                     price_max, mileage_max, fuel, gearbox, countries,
+                                     exclude_damaged, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (str(chat_id), profile["name"], profile["brand"], profile.get("model"),
              profile.get("year_from"), profile.get("price_min"), profile.get("price_max"),
              profile.get("mileage_max"), profile.get("fuel"), profile.get("gearbox"),
-             ",".join(profile.get("countries") or ["D"]), now()))
+             ",".join(profile.get("countries") or ["D"]),
+             int(profile.get("exclude_damaged", 1)), now()))
         self.conn.commit()
         return cur.lastrowid
 

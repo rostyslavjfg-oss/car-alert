@@ -69,6 +69,7 @@ class AutoScout24Scraper(BaseScraper):
         v = raw.get("vehicle") or {}
         tracking = raw.get("tracking") or {}
         seller = raw.get("seller") or {}
+        location = raw.get("location") or {}
         # thumbnails come as .../250x188.webp - ask for something Telegram-worthy
         images = [i.replace("/250x188.webp", "/640x480.webp")
                   for i in (raw.get("images") or [])][:MAX_IMAGES]
@@ -86,6 +87,10 @@ class AutoScout24Scraper(BaseScraper):
             url="https://www.autoscout24.com" + (raw.get("url") or ""),
             image_url=images[0] if images else None,
             images=images,
+            title=v.get("modelVersionInput") or raw.get("versionTitle"),
+            country=(location.get("countryCode") or "").upper() or None,
+            city=location.get("city"),
+            damaged=bool(v.get("isCurrentlyDamaged")),
             dealer_id=str(seller.get("id")) if seller.get("id") else None,
             dealer_name=seller.get("companyName") or seller.get("contactName"),
         )

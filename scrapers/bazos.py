@@ -31,6 +31,19 @@ FUEL_WORDS = [(r"naft\w*|diesel|\btdi\b|\bhdi\b|\bcdti\b|\bdci\b", "diesel"),
               (r"elektro\w*|\bev\b", "electric")]
 GEARBOX_WORDS = [(r"automat\w*|\bdsg\b|\bsteptronic\b", "automatic"),
                  (r"manu[áa]l\w*|\bmanual\b", "manual")]
+# Sellers advertise the opposite just as often ("NEBÚRANÉ", "bez poškodenia"),
+# and a false positive silently hides a good car - so negations are cut first.
+NEGATED_RE = re.compile(
+    r"\bbez\s+(poškoden|poskoden|nehod|nehôd|havár|havar|búrač|burac)\w*"
+    r"|\bne(havar|búran|buran|poškoden|poskoden)\w*", re.I)
+DAMAGE_RE = re.compile(
+    r"\bhavar\w*|\bpo nehode\b|\bnabúran\w*|\bnaburan\w*|\bbúran\w*|\bburan\w*"
+    r"|\bpoškoden\w*|\bposkoden\w*|\bna diely\b|\bna náhradné diely\b"
+    r"|\bnepojazdn\w*|\bbez tp\b|\bbúračk\w*|\bburack\w*", re.I)
+
+
+def looks_damaged(text: str) -> bool:
+    return bool(DAMAGE_RE.search(NEGATED_RE.sub(" ", text)))
 
 
 class BazosScraper(BaseScraper):
@@ -102,6 +115,10 @@ class BazosScraper(BaseScraper):
             image_url=image.get("src") if image else None,
             images=[image["src"]] if image and image.get("src") else [],
             title=title,
+            country="SK",
+            city=None,
+            # bazos has no damage flag - the seller either writes it or not
+            damaged=looks_damaged(text),
             dealer_id=None,        # bazos exposes no stable seller id in the result list
             dealer_name=None,
         )
