@@ -12,6 +12,7 @@ empty table config/searches.yml is imported once as a starting point.
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import sys
@@ -136,6 +137,7 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
 
         pending = collect_alerts(db, brands, seed, max_pages)
         db.set_meta("last_run", now())
+        export_webapp_decks(db)
 
         if seed:
             total = len(db.known_ids())
@@ -158,6 +160,37 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
         if owns_db:
             db.commit()
             db.close()
+
+
+WEBAPP_DATA = ROOT / "webapp" / "data"
+DECK_FIELDS = ("id", "source", "brand", "model", "year", "mileage_km", "price_eur",
+               "fuel", "gearbox", "url", "image_url")
+
+
+def export_webapp_decks(db: Db) -> int:
+    """Write one feed file per chat for the swipe Mini App.
+
+    The file name is an unguessable per-chat token, because on a public repo
+    anything under webapp/ is world-readable.
+    """
+    WEBAPP_DATA.mkdir(parents=True, exist_ok=True)
+    written = 0
+    for row in db.conn.execute("SELECT DISTINCT chat_id FROM searches"):
+        chat_id = row["chat_id"]
+        deck = []
+        for listing in db.swipe_deck(chat_id):
+            item = {k: listing.get(k) for k in DECK_FIELDS}
+            try:
+                item["images"] = json.loads(listing.get("images") or "[]")
+            except (TypeError, ValueError):
+                item["images"] = []
+            deck.append(item)
+        path = WEBAPP_DATA / f"{db.chat_token(chat_id)}.json"
+        path.write_text(json.dumps({"generated": now(), "listings": deck},
+                                   ensure_ascii=False), encoding="utf-8")
+        written += 1
+        log.info("webapp deck for chat %s: %d listings", chat_id, len(deck))
+    return written
 
 
 def drain_bot_updates(db: Db) -> None:

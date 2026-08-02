@@ -11,11 +11,13 @@ Never poll from both at once - Telegram answers the second one with 409.
 
 import html
 import logging
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
-                      ReplyKeyboardMarkup, Update)
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
+                      ReplyKeyboardMarkup, Update, WebAppInfo)
 from telegram.constants import ParseMode
 from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
                           ContextTypes, MessageHandler, filters)
+import json
+import os
 
 from fetch_mobile_makes import normalize
 
@@ -30,7 +32,7 @@ HELP = """<b>Автоподбор</b> — слежу за объявлениям
 /del &lt;id&gt; — удалить поиск
 /pause &lt;id&gt; — приостановить
 /resume &lt;id&gt; — возобновить
-/fav — избранное
+/fav — избранное (то, что лайкнул свайпами)
 /dealers — скрытые продавцы
 /run — прогнать поиск прямо сейчас
 /status — счётчики
@@ -86,21 +88,51 @@ FUEL_CHOICE = {"diesel": "diesel", "дизель": "diesel", "бензин": "pe
 GEARBOX_CHOICE = {"автомат": "automatic", "automatic": "automatic",
                   "механика": "manual", "manual": "manual", "ручная": "manual"}
 
+POPULAR_BRANDS = ["BMW", "Audi", "Mercedes-Benz", "Volkswagen", "Skoda", "Toyota",
+                  "Ford", "Opel", "Peugeot", "Renault", "Hyundai", "Kia",
+                  "Volvo", "Mazda", "Nissan", "SEAT", "Honda", "Tesla"]
+
+
+def _model_options(draft: dict, bot_data: dict) -> list:
+    """Model names mobile.de knows for this make - typing one is still allowed."""
+    brand = (bot_data.get("brands") or {}).get(draft.get("brand")) or {}
+    make_id = brand.get("mobilede_make_id")
+    if not make_id:
+        return []
+    try:
+        import requests
+        r = requests.get(f"https://www.mobile.de/svc/r/models/{make_id}",
+                         headers={"X-Mobile-Client": "de.mobile.android.app",
+                                  "Accept": "application/json"}, timeout=15)
+        r.raise_for_status()
+        models = r.json().get("models") or []
+    except Exception as exc:
+        log.warning("model options unavailable for %s: %s", draft.get("brand"), exc)
+        return []
+    # skip the "g" entries: those are groups like "3er Reihe", which neither the
+    # autoscout24 url nor the matcher understands
+    return [m["n"] for m in models if not m.get("g") and m.get("n")][:24]
+
+
+# (key, question, parser, options) - options is a list or f(draft, bot_data) -> list
 STEPS = [
-    ("brand", "Марка? (как на сайте, например <code>BMW</code>)", _opt_text),
-    ("model", "Модель? (например <code>320</code>, или <code>-</code> — любая)", _opt_text),
-    ("year_from", "Год от? (например <code>2018</code>, или <code>-</code>)", _opt_int),
-    ("price_max", "Максимальная цена в €? (например <code>20000</code>, или <code>-</code>)", _opt_int),
-    ("mileage_max", "Максимальный пробег в км? (например <code>150000</code>, или <code>-</code>)", _opt_int),
-    ("fuel", "Топливо? <code>дизель / бензин / гибрид / электро</code> или <code>-</code>",
-     _choice(FUEL_CHOICE)),
-    ("gearbox", "Коробка? <code>автомат / механика</code> или <code>-</code>",
-     _choice(GEARBOX_CHOICE)),
-    ("countries", "Страны? <code>D</code>—Германия, <code>A</code>—Австрия, <code>SK</code>—Словакия.\n"
-                  "Можно списком: <code>D,A,SK</code> (или <code>-</code> — только Германия)",
-     _countries),
+    ("brand", "Марка?", _opt_text, POPULAR_BRANDS),
+    ("model", "Модель?", _opt_text, _model_options),
+    ("year_from", "Год от?", _opt_int,
+     ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]),
+    ("price_max", "Максимальная цена, €?", _opt_int,
+     ["5000", "7500", "10000", "15000", "20000", "25000", "30000", "40000", "50000"]),
+    ("mileage_max", "Максимальный пробег, км?", _opt_int,
+     ["50000", "100000", "150000", "200000", "250000"]),
+    ("fuel", "Топливо?", _choice(FUEL_CHOICE), ["дизель", "бензин", "гибрид", "электро"]),
+    ("gearbox", "Коробка?", _choice(GEARBOX_CHOICE), ["автомат", "механика"]),
+    ("countries", "Страны? Отметь нужные и жми «Готово»", _countries, None),
 ]
-STEP_INDEX = {name: i for i, (name, _, _) in enumerate(STEPS)}
+STEP_INDEX = {name: i for i, (name, _, _, _) in enumerate(STEPS)}
+
+COUNTRIES = [("D", "Германия"), ("A", "Австрия"), ("SK", "Словакия"), ("CZ", "Чехия"),
+             ("PL", "Польша"), ("NL", "Нидерланды"), ("B", "Бельгия"),
+             ("I", "Италия"), ("F", "Франция")]
 
 
 # --- rendering ---------------------------------------------------------------
@@ -145,12 +177,26 @@ BTN_RUN = "\U0001f50d Искать сейчас"
 BTN_STATUS = "\U0001f4ca Статус"
 BTN_DEALERS = "\U0001f6ab Скрытые"
 BTN_HELP = "❓ Помощь"
+BTN_SWIPE = "\U0001f525 Свайпать"
 BTN_CANCEL = "✖️ Отмена"
 BTN_SKIP = "— пропустить"
 
 
-def main_keyboard() -> ReplyKeyboardMarkup:
+def webapp_url(db=None, chat_id=None):
+    """Base url of the swipe Mini App, with this chat's feed token attached."""
+    base = (os.environ.get("WEBAPP_URL") or "").strip().rstrip("/")
+    if not base or db is None or chat_id is None:
+        return None
+    return f"{base}/?t={db.chat_token(chat_id)}"
+
+
+def main_keyboard(db=None, chat_id=None) -> ReplyKeyboardMarkup:
+    url = webapp_url(db, chat_id)
+    # sendData only works for a web app opened from a reply-keyboard button,
+    # which is exactly what this is - an inline button could not report back
+    swipe_row = [[KeyboardButton(BTN_SWIPE, web_app=WebAppInfo(url))]] if url else []
     return ReplyKeyboardMarkup(
+        swipe_row +
         [[BTN_ADD, BTN_LIST],
          [BTN_RUN, BTN_FAV],
          [BTN_STATUS, BTN_DEALERS, BTN_HELP]],
@@ -160,11 +206,39 @@ def main_keyboard() -> ReplyKeyboardMarkup:
 REQUIRED_STEPS = {"brand"}          # everything else may be skipped
 
 
-def dialog_keyboard(step: str = "") -> ReplyKeyboardMarkup:
-    """Shown while /add runs - skipping should not need typing, except for brand."""
-    rows = [] if step in REQUIRED_STEPS else [[BTN_SKIP]]
-    return ReplyKeyboardMarkup(rows + [[BTN_CANCEL]],
-                               resize_keyboard=True, is_persistent=True)
+def _chunk(items, per_row):
+    return [items[i:i + per_row] for i in range(0, len(items), per_row)]
+
+
+def dialog_keyboard(step: str = "", options=None) -> ReplyKeyboardMarkup:
+    """Answers are buttons; typing still works for anything not on the list."""
+    per_row = 3 if all(len(str(o)) <= 12 for o in (options or [])) else 2
+    rows = _chunk([str(o) for o in (options or [])], per_row)
+    if step not in REQUIRED_STEPS:
+        rows.append([BTN_SKIP])
+    rows.append([BTN_CANCEL])
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True, is_persistent=True,
+                               one_time_keyboard=False)
+
+
+def step_options(index: int, draft: dict, bot_data: dict) -> list:
+    options = STEPS[index][3]
+    if callable(options):
+        return options(draft, bot_data) or []
+    return options or []
+
+
+def countries_keyboard(selected) -> InlineKeyboardMarkup:
+    """Multi-select: every tap toggles one country, «Готово» closes the step."""
+    chosen = set(selected or [])
+    buttons = [InlineKeyboardButton(("✅ " if code in chosen else "▫️ ") + name,
+                                    callback_data=f"cty:{code}")
+               for code, name in COUNTRIES]
+    rows = _chunk(buttons, 2)
+    rows.append([InlineKeyboardButton(
+        f"Готово ({len(chosen)})" if chosen else "Готово — только Германия",
+        callback_data="cty:done")])
+    return InlineKeyboardMarkup(rows)
 
 
 def listing_keyboard(listing_id: str, dealer_key=None, search_id=None) -> InlineKeyboardMarkup:
@@ -187,27 +261,43 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _db(context).add_subscriber(chat.id, update.effective_user.username if update.effective_user else None)
     await update.message.reply_text(
         f"Чат подключён (<code>{chat.id}</code>).\n\n{HELP}",
-        parse_mode=ParseMode.HTML, reply_markup=main_keyboard())
+        parse_mode=ParseMode.HTML, reply_markup=main_keyboard(_db(context), chat.id))
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(HELP, parse_mode=ParseMode.HTML,
-                                    reply_markup=main_keyboard())
+    await update.message.reply_text(
+        HELP, parse_mode=ParseMode.HTML,
+        reply_markup=main_keyboard(_db(context), update.effective_chat.id))
+
+
+async def ask_step(message, context, db, chat_id, index: int, draft: dict):
+    """Store the step and ask its question with the right keyboard."""
+    key, question, _, _ = STEPS[index]
+    db.set_dialog(chat_id, key, draft)
+    prefix = f"({index + 1}/{len(STEPS)}) "
+    if key == "countries":
+        await message.reply_text(prefix + question,
+                                 reply_markup=countries_keyboard(draft.get("countries")))
+        return
+    options = step_options(index, draft, context.application.bot_data)
+    # the model list is truncated, so the hint has to stay even when it is not empty
+    hint = ("\n\nНет в списке — просто напиши."
+            if not options or key == "model" else "")
+    await message.reply_text(prefix + question + hint, parse_mode=ParseMode.HTML,
+                             reply_markup=dialog_keyboard(key, options))
 
 
 async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = _db(context)
     chat_id = update.effective_chat.id
     db.add_subscriber(chat_id)
-    db.set_dialog(chat_id, STEPS[0][0], {})
-    await update.message.reply_text(
-        f"Новый поиск (1/{len(STEPS)}). {STEPS[0][1]}",
-        parse_mode=ParseMode.HTML, reply_markup=dialog_keyboard(STEPS[0][0]))
+    await ask_step(update.message, context, db, chat_id, 0, {})
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _db(context).clear_dialog(update.effective_chat.id)
-    await update.message.reply_text("Отменено.", reply_markup=main_keyboard())
+    await update.message.reply_text(
+        "Отменено.", reply_markup=main_keyboard(_db(context), update.effective_chat.id))
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -226,22 +316,25 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not step:
         await update.message.reply_text(
             "Не на что отвечать — жми кнопку снизу или /help.",
-            reply_markup=main_keyboard())
+            reply_markup=main_keyboard(db, chat_id))
         return
 
     index = STEP_INDEX[step]
-    key, _, parse = STEPS[index]
+    key, _, parse, _ = STEPS[index]
     try:
         value = parse(update.message.text or "")
     except ValueError as exc:
-        await update.message.reply_text(f"{exc}. Попробуй ещё раз.",
-                                        reply_markup=dialog_keyboard(step))
+        await update.message.reply_text(
+            f"{exc}. Попробуй ещё раз.",
+            reply_markup=dialog_keyboard(step, step_options(index, draft,
+                                                            context.application.bot_data)))
         return
 
     if key == "brand":
         if not value:
-            await update.message.reply_text("Марку пропустить нельзя — напиши её.",
-                                            reply_markup=dialog_keyboard("brand"))
+            await update.message.reply_text(
+                "Марку пропустить нельзя — выбери кнопкой или напиши.",
+                reply_markup=dialog_keyboard("brand", POPULAR_BRANDS))
             return
         brands = context.application.bot_data.get("brands") or {}
         match = _resolve_brand(brands, value)
@@ -249,28 +342,28 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(
                 f"Марки «{html.escape(str(value))}» нет в справочнике. "
                 "Проверь написание и пришли ещё раз.",
-                parse_mode=ParseMode.HTML, reply_markup=dialog_keyboard("brand"))
+                parse_mode=ParseMode.HTML,
+                reply_markup=dialog_keyboard("brand", POPULAR_BRANDS))
             return
         value = match
     draft[key] = value
 
     if index + 1 < len(STEPS):
-        next_key, question, _ = STEPS[index + 1]
-        db.set_dialog(chat_id, next_key, draft)
-        await update.message.reply_text(f"({index + 2}/{len(STEPS)}) {question}",
-                                        parse_mode=ParseMode.HTML,
-                                        reply_markup=dialog_keyboard(next_key))
+        await ask_step(update.message, context, db, chat_id, index + 1, draft)
         return
+    await finish_dialog(update.message, db, chat_id, draft)
 
+
+async def finish_dialog(message, db, chat_id, draft: dict):
     db.clear_dialog(chat_id)
     draft["name"] = _unique_name(db, chat_id, draft)
     search_id = db.add_search(chat_id, draft)
     profile = db.get_search(search_id, chat_id)
-    await update.message.reply_text(
-        f"Сохранил как #{search_id}: {describe(profile)}",
-        parse_mode=ParseMode.HTML, reply_markup=search_keyboard(profile))
-    await update.message.reply_text("Готово. Жми «Искать сейчас», чтобы не ждать полчаса.",
-                                    reply_markup=main_keyboard())
+    await message.reply_text(f"Сохранил как #{search_id}: {describe(profile)}",
+                             parse_mode=ParseMode.HTML,
+                             reply_markup=search_keyboard(profile))
+    await message.reply_text("Готово. Жми «Искать сейчас», чтобы не ждать полчаса.",
+                             reply_markup=main_keyboard(db, chat_id))
 
 
 # the UI is Russian, so people type Cyrillic and shorthands
@@ -405,6 +498,36 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(summary or "Готово.")
 
 
+async def on_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Verdicts sent back by the swipe Mini App: likes become favorites."""
+    db = _db(context)
+    chat_id = update.effective_chat.id
+    try:
+        payload = json.loads(update.message.web_app_data.data)
+        swipes = payload["swipes"]
+    except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        log.warning("bad web_app_data from %s: %s", chat_id, exc)
+        await update.message.reply_text("Не разобрал ответ приложения, свайпы не сохранились.")
+        return
+
+    likes = 0
+    for swipe in swipes:
+        listing_id, verdict = swipe.get("id"), swipe.get("verdict")
+        if not listing_id or verdict not in ("like", "pass"):
+            continue
+        db.record_swipe(chat_id, listing_id, verdict)
+        if verdict == "like":
+            # a second like must not toggle an existing favorite back off
+            if listing_id not in {r["id"] for r in db.list_favorites(chat_id, limit=10000)}:
+                db.toggle_favorite(chat_id, listing_id)
+            likes += 1
+    db.commit()
+    await update.message.reply_text(
+        f"Записал {len(swipes)} свайпов, из них ❤️ {likes}. "
+        f"Понравившиеся — в «Избранное»." if swipes else "Свайпов не было.",
+        reply_markup=main_keyboard(db, chat_id))
+
+
 # --- callbacks ---------------------------------------------------------------
 
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -413,7 +536,28 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     action, _, payload = (query.data or "").partition(":")
 
-    if action == "fav":
+    if action == "cty":
+        step, draft = db.get_dialog(chat_id)
+        if step != "countries":
+            await query.answer("Этот шаг уже пройден")
+            return
+        chosen = list(draft.get("countries") or [])
+        if payload == "done":
+            draft["countries"] = chosen or ["D"]
+            await query.answer()
+            await query.edit_message_text(
+                "Страны: " + ", ".join(dict(COUNTRIES).get(c, c) for c in draft["countries"]))
+            await finish_dialog(query.message, db, chat_id, draft)
+            return
+        if payload in chosen:
+            chosen.remove(payload)
+        else:
+            chosen.append(payload)
+        draft["countries"] = chosen
+        db.set_dialog(chat_id, "countries", draft)
+        await query.answer()
+        await query.edit_message_reply_markup(countries_keyboard(chosen))
+    elif action == "fav":
         added = db.toggle_favorite(chat_id, payload)
         await query.answer("Добавил в избранное" if added else "Убрал из избранного")
     elif action == "blk":
@@ -461,6 +605,7 @@ def build_application(token: str, db: Db, brands: dict, run_scrape=None,
     app.add_handler(CommandHandler("dealers", cmd_dealers))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("run", cmd_run))
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, on_webapp_data))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
@@ -475,6 +620,7 @@ BUTTONS = {
     BTN_STATUS: cmd_status,
     BTN_DEALERS: cmd_dealers,
     BTN_HELP: cmd_help,
+    BTN_SWIPE: cmd_help,          # only reachable if the web app failed to open
     BTN_CANCEL: cmd_cancel,
 }
 

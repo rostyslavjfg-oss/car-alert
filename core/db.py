@@ -1,6 +1,7 @@
 """SQLite storage. The file is committed back to the repo after every run."""
 
 import json
+import secrets
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -71,7 +72,16 @@ CREATE TABLE IF NOT EXISTS searches (
 CREATE TABLE IF NOT EXISTS subscribers (
     chat_id   TEXT PRIMARY KEY,
     username  TEXT,
+    token     TEXT,                      -- unguessable name of this chat's webapp feed
     added_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS swipes (
+    chat_id    TEXT NOT NULL,
+    listing_id TEXT NOT NULL,
+    verdict    TEXT NOT NULL,            -- 'like' | 'pass'
+    swiped_at  TEXT NOT NULL,
+    PRIMARY KEY (chat_id, listing_id)
 );
 
 CREATE TABLE IF NOT EXISTS favorites (
@@ -114,6 +124,7 @@ MIGRATIONS = [
     ("listings", "dealer_name", "TEXT"),
     ("notification_queue", "chat_id", "TEXT"),
     ("notification_queue", "search_id", "INTEGER"),
+    ("subscribers", "token", "TEXT"),
 ]
 
 
@@ -297,6 +308,47 @@ class Db:
             " ON CONFLICT(chat_id) DO UPDATE SET username = excluded.username",
             (str(chat_id), username, now()))
         self.conn.commit()
+
+    def chat_token(self, chat_id) -> str:
+        """Stable random name for this chat's webapp feed file."""
+        row = self.conn.execute("SELECT token FROM subscribers WHERE chat_id = ?",
+                                (str(chat_id),)).fetchone()
+        if row and row["token"]:
+            return row["token"]
+        token = secrets.token_urlsafe(12)
+        self.add_subscriber(chat_id)
+        self.conn.execute("UPDATE subscribers SET token = ? WHERE chat_id = ?",
+                          (token, str(chat_id)))
+        self.conn.commit()
+        return token
+
+    def chat_for_token(self, token: str):
+        row = self.conn.execute("SELECT chat_id FROM subscribers WHERE token = ?",
+                                (token,)).fetchone()
+        return row["chat_id"] if row else None
+
+    # --- swipes -----------------------------------------------------------
+    def record_swipe(self, chat_id, listing_id: str, verdict: str) -> None:
+        self.conn.execute(
+            "INSERT INTO swipes (chat_id, listing_id, verdict, swiped_at) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT(chat_id, listing_id) DO UPDATE SET verdict = excluded.verdict,"
+            " swiped_at = excluded.swiped_at",
+            (str(chat_id), listing_id, verdict, now()))
+
+    def swiped_ids(self, chat_id) -> set:
+        return {r["listing_id"] for r in self.conn.execute(
+            "SELECT listing_id FROM swipes WHERE chat_id = ?", (str(chat_id),))}
+
+    def swipe_deck(self, chat_id, limit: int = 200) -> list:
+        """Listings already alerted to this chat that have not been swiped yet."""
+        rows = self.conn.execute(
+            """SELECT DISTINCT l.* FROM listings l
+               JOIN notifications_sent n ON n.listing_id = l.id
+               JOIN searches s ON s.name = n.search_name AND s.chat_id = ?
+               WHERE l.id NOT IN (SELECT listing_id FROM swipes WHERE chat_id = ?)
+               ORDER BY l.first_seen DESC LIMIT ?""",
+            (str(chat_id), str(chat_id), limit))
+        return [dict(r) for r in rows]
 
     # --- favorites --------------------------------------------------------
     def toggle_favorite(self, chat_id, listing_id: str) -> bool:

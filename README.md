@@ -63,6 +63,31 @@ python bot.py
 Then set the repo variable `SELF_HOSTED_BOT=true` so the workflow stops draining.
 Telegram allows exactly one `getUpdates` consumer; running both gives HTTP 409.
 
+## Swipe Mini App
+
+`webapp/index.html` is a Tinder-style card deck served as a Telegram Mini App:
+drag right to like, left to pass, tap the photo edges to flip through the 5
+pictures, ↩ undoes the last card. Likes land in **❤️ Избранное**, passes are
+remembered so the same ad never comes back.
+
+It needs a static https host, because Telegram will not open a Mini App from a
+local file:
+
+1. Push the repo to GitHub, Settings → Pages → deploy from `main` / root.
+2. Repo → Settings → Secrets and variables → Actions → **Variables**:
+   `WEBAPP_URL = https://<user>.github.io/<repo>/webapp`
+3. Send `/start` again — a **🔥 Свайпать** button appears above the keyboard.
+
+Any static host works (Vercel, Cloudflare Pages); only the URL changes.
+
+**How the data moves.** Each run writes `webapp/data/<token>.json` — the deck of
+listings already alerted to that chat and not yet swiped — and commits it. The
+file name is a random per-chat token because everything under `webapp/` is
+world-readable on a public repo. Verdicts travel back through
+`Telegram.WebApp.sendData()`, which only works for a Mini App opened from a
+**reply-keyboard** button; an inline button cannot report back, which is why the
+swipe entry point lives on the bottom keyboard.
+
 ## Local usage
 
 ```bash

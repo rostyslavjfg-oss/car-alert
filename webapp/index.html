@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Автоподбор — свайп</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #f2f2f7; --card: #fff; --text: #111; --dim: #6b6b70;
+    --line: rgba(0,0,0,.08); --like: #1fbf75; --pass: #ff4757;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#17181c; --card:#232429; --text:#f2f2f5; --dim:#9a9aa2; --line:rgba(255,255,255,.1); }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; overscroll-behavior: none; }
+  body {
+    background: var(--tg-theme-bg-color, var(--bg));
+    color: var(--tg-theme-text-color, var(--text));
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+  header { display: flex; justify-content: space-between; align-items: center;
+           font-size: 13px; color: var(--dim); padding: 2px 4px 10px; flex: none; }
+  #liked { color: var(--like); font-weight: 600; }
+  #stack { position: relative; flex: 1; min-height: 0; }
+
+  .card {
+    position: absolute; inset: 0; border-radius: 18px; overflow: hidden;
+    background: var(--tg-theme-secondary-bg-color, var(--card));
+    box-shadow: 0 8px 30px rgba(0,0,0,.18); display: flex; flex-direction: column;
+    will-change: transform; touch-action: pan-y;
+  }
+  .card.behind { transform: scale(.95) translateY(10px); }
+  .card.gone { transition: transform .32s ease-out, opacity .32s ease-out; opacity: 0; }
+  .snapback { transition: transform .25s cubic-bezier(.2,.8,.3,1); }
+
+  .photo { position: relative; flex: 1; min-height: 0; background: #000; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bars { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 4px; z-index: 3; }
+  .bars i { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,.35); }
+  .bars i.on { background: #fff; }
+  .tap { position: absolute; top: 0; bottom: 0; width: 35%; z-index: 2; }
+  .tap.l { left: 0; } .tap.r { right: 0; }
+
+  .stamp {
+    position: absolute; top: 26px; padding: 6px 14px; border: 3px solid; border-radius: 10px;
+    font-weight: 800; font-size: 24px; letter-spacing: 1px; opacity: 0; z-index: 4;
+    transform: rotate(-14deg); pointer-events: none;
+  }
+  .stamp.like { left: 18px; color: var(--like); border-color: var(--like); }
+  .stamp.pass { right: 18px; color: var(--pass); border-color: var(--pass); transform: rotate(14deg); }
+
+  .info { flex: none; padding: 11px 14px 13px; }
+  /* deliberate 13 -> 17 -> 26 ramp: price is what the eye should hit first */
+  .title { font-size: 17px; font-weight: 650; margin-bottom: 2px; }
+  .price { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
+  .meta { color: var(--dim); font-size: 13px; margin-top: 5px; }
+  .info a { color: var(--tg-theme-link-color, #2f80ed); font-size: 13px;
+            text-decoration: none; display: inline-block; margin-top: 8px; }
+
+  footer { flex: none; display: flex; justify-content: center; gap: 20px; padding-top: 14px; }
+  button.act {
+    width: 62px; height: 62px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--tg-theme-secondary-bg-color, var(--card)); font-size: 25px;
+    cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,.12); line-height: 1;
+  }
+  button.act:active { transform: scale(.92); }
+  button.act.small { width: 46px; height: 46px; font-size: 18px; align-self: center; }
+  button.act:disabled { opacity: .35; }
+
+  #done { position: absolute; inset: 0; display: none; flex-direction: column;
+          align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 24px; }
+  #done h2 { margin: 0; font-size: 20px; }
+  #done p { margin: 0; color: var(--dim); }
+  #save { padding: 13px 26px; border-radius: 12px; border: 0; font-size: 16px; font-weight: 600;
+          background: var(--tg-theme-button-color, #2f80ed);
+          color: var(--tg-theme-button-text-color, #fff); cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <span id="left">загрузка…</span>
+  <span id="liked">♥ 0</span>
+</header>
+
+<div id="stack">
+  <div id="done">
+    <h2 id="doneTitle">Всё просмотрено</h2>
+    <p id="doneText"></p>
+    <button id="save">Сохранить и закрыть</button>
+  </div>
+</div>
+
+<footer>
+  <button class="act" id="btnPass" title="Не нравится">✖️</button>
+  <button class="act small" id="btnUndo" title="Вернуть" disabled>↩</button>
+  <button class="act" id="btnLike" title="Нравится">❤️</button>
+</footer>
+
+<script>
+"use strict";
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const stack = document.getElementById("stack");
+const doneEl = document.getElementById("done");
+const leftEl = document.getElementById("left");
+const likedEl = document.getElementById("liked");
+const btnUndo = document.getElementById("btnUndo");
+
+const STORE = "carAlertSwipes";
+let deck = [], index = 0, verdicts = [], card = null, photoAt = 0;
+
+const fmt = n => (n === null || n === undefined || n === "") ? "?" :
+  String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const esc = s => String(s == null ? "" : s).replace(/[<>&"]/g,
+  c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+
+const FUEL = {diesel:"дизель", petrol:"бензин", hybrid:"гибрид", electric:"электро"};
+const GEAR = {automatic:"автомат", manual:"механика"};
+
+function param(name) {
+  return new URLSearchParams(location.search).get(name) || "";
+}
+
+async function load() {
+  const token = param("t");
+  if (!token) { fail("Нет параметра ?t — открой через кнопку в боте."); return; }
+  try {
+    const r = await fetch(`data/${encodeURIComponent(token)}.json?v=${Date.now()}`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    deck = (await r.json()).listings || [];
+  } catch (e) { fail("Не смог загрузить объявления: " + e.message); return; }
+
+  // a crashed session must not lose the swipes already made
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || "{}");
+    if (saved.token === token && Array.isArray(saved.verdicts)) {
+      verdicts = saved.verdicts;
+      const done = new Set(verdicts.map(v => v.id));
+      deck = deck.filter(d => !done.has(d.id));
+    }
+  } catch (e) { /* ignore a corrupt cache */ }
+
+  render();
+}
+
+function fail(msg) {
+  leftEl.textContent = "";
+  doneEl.style.display = "flex";
+  document.getElementById("doneTitle").textContent = "Не получилось";
+  document.getElementById("doneText").textContent = msg;
+  document.getElementById("save").textContent = "Закрыть";
+}
+
+function persist() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify({token: param("t"), verdicts}));
+  } catch (e) { /* private mode */ }
+}
+
+function counters() {
+  const likes = verdicts.filter(v => v.verdict === "like").length;
+  likedEl.textContent = "♥ " + likes;
+  leftEl.textContent = index >= deck.length ? "" : `${index + 1} из ${deck.length}`;
+  btnUndo.disabled = verdicts.length === 0;
+}
+
+function render() {
+  counters();
+  if (card) { card.remove(); card = null; }
+  if (index >= deck.length) { finish(); return; }
+  photoAt = 0;
+  card = buildCard(deck[index]);
+  stack.appendChild(card);
+  attachDrag(card);
+}
+
+function buildCard(item) {
+  const el = document.createElement("div");
+  el.className = "card";
+  const photos = (item.images && item.images.length) ? item.images
+                 : (item.image_url ? [item.image_url] : []);
+  el.innerHTML = `
+    <div class="photo">
+      <div class="bars">${photos.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>
+      <img alt="" src="${esc(photos[0] || "")}">
+      <div class="tap l"></div><div class="tap r"></div>
+      <div class="stamp like">НРАВИТСЯ</div>
+      <div class="stamp pass">МИМО</div>
+    </div>
+    <div class="info">
+      <div class="title">${esc(item.brand || "")} ${esc(item.model || "")} · ${esc(item.year || "?")}</div>
+      <div class="price">${fmt(item.price_eur)} €</div>
+      <div class="meta">${fmt(item.mileage_km)} км · ${esc(FUEL[item.fuel] || item.fuel || "?")}
+        · ${esc(GEAR[item.gearbox] || item.gearbox || "?")} · ${esc(item.source || "")}</div>
+      <a href="${esc(item.url || "#")}" target="_blank" rel="noopener">Открыть объявление ↗</a>
+    </div>`;
+  const img = el.querySelector("img");
+  const bars = [...el.querySelectorAll(".bars i")];
+  const step = d => {
+    if (photos.length < 2) return;
+    photoAt = (photoAt + d + photos.length) % photos.length;
+    img.src = photos[photoAt];
+    bars.forEach((b, i) => b.classList.toggle("on", i === photoAt));
+  };
+  el.querySelector(".tap.l").onclick = () => step(-1);
+  el.querySelector(".tap.r").onclick = () => step(1);
+  el.querySelector(".info a").onclick = e => {
+    if (tg && tg.openLink) { e.preventDefault(); tg.openLink(item.url); }
+  };
+  return el;
+}
+
+function attachDrag(el) {
+  const like = el.querySelector(".stamp.like"), pass = el.querySelector(".stamp.pass");
+  let startX = 0, startY = 0, dx = 0, dy = 0, dragging = false;
+
+  el.addEventListener("pointerdown", e => {
+    if (e.target.tagName === "A") return;
+    dragging = true; startX = e.clientX; startY = e.clientY;
+    el.classList.remove("snapback"); el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    dx = e.clientX - startX; dy = e.clientY - startY;
+    el.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
+    like.style.opacity = Math.max(0, Math.min(1, dx / 90));
+    pass.style.opacity = Math.max(0, Math.min(1, -dx / 90));
+  });
+  const release = () => {
+    if (!dragging) return;
+    dragging = false;
+    if (Math.abs(dx) > 95) { fly(dx > 0 ? "like" : "pass"); }
+    else {
+      el.classList.add("snapback");
+      el.style.transform = "";
+      like.style.opacity = pass.style.opacity = 0;
+    }
+    dx = dy = 0;
+  };
+  el.addEventListener("pointerup", release);
+  el.addEventListener("pointercancel", release);
+}
+
+function fly(verdict) {
+  if (!card || index >= deck.length) return;
+  const el = card, dir = verdict === "like" ? 1 : -1;
+  el.classList.add("gone");
+  el.style.transform = `translate(${dir * window.innerWidth * 1.2}px, 40px) rotate(${dir * 25}deg)`;
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+  verdicts.push({id: deck[index].id, verdict});
+  index += 1;
+  persist();
+  card = null;
+  setTimeout(() => el.remove(), 340);
+  render();
+}
+
+function undo() {
+  if (!verdicts.length) return;
+  verdicts.pop();
+  index = Math.max(0, index - 1);
+  persist();
+  doneEl.style.display = "none";
+  render();
+}
+
+function finish() {
+  const likes = verdicts.filter(v => v.verdict === "like").length;
+  doneEl.style.display = "flex";
+  document.getElementById("doneTitle").textContent =
+    deck.length ? "Всё просмотрено" : "Пока нечего смотреть";
+  document.getElementById("doneText").textContent = deck.length
+    ? `Понравилось ${likes} из ${verdicts.length}. Они уедут в «Избранное».`
+    : "Новые объявления появятся после следующего прогона.";
+}
+
+document.getElementById("btnLike").onclick = () => fly("like");
+document.getElementById("btnPass").onclick = () => fly("pass");
+btnUndo.onclick = undo;
+document.getElementById("save").onclick = () => {
+  if (tg && tg.sendData) {
+    tg.sendData(JSON.stringify({v: 1, swipes: verdicts}));
+    localStorage.removeItem(STORE);
+  } else if (tg && tg.close) { tg.close(); }
+  else { alert("Открой это из бота, чтобы результат сохранился."); }
+};
+addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") fly("like");
+  if (e.key === "ArrowLeft") fly("pass");
+  if (e.key === "ArrowDown") undo();
+});
+
+load();
+</script>
+</body>
+</html>
