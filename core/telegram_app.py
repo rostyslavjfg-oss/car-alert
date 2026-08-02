@@ -25,7 +25,8 @@ from .db import Db
 
 log = logging.getLogger(__name__)
 
-HELP = """<b>Автоподбор</b> — слежу за объявлениями на mobile.de, autoscout24, bazos.sk и willhaben.at
+HELP = """<b>Автоподбор</b> — слежу за объявлениями на mobile.de, autoscout24,
+bazos.sk, willhaben.at, sauto.cz, otomoto.pl и openlane.eu
 
 /add — новый поиск (по шагам)
 /list — мои поиски

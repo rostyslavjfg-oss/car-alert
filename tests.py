@@ -84,6 +84,38 @@ def test_damage():
           matches(listing(damaged=True), {"exclude_damaged": 0}), True)
 
 
+def test_currency():
+    print("\nвалюты")
+    from core import currency
+    r = currency.rates()
+    check("курс CZK есть", r.get("CZK", 0) > 10)
+    check("курс PLN есть", r.get("PLN", 0) > 2)
+    check("EUR = 1", r["EUR"], 1.0)
+    eur = currency.to_eur(500000, "CZK")
+    check("500 000 Kč -> разумные евро", 15000 < eur < 30000)
+    czk = currency.from_eur(eur, "CZK")
+    check("обратная конвертация сходится", abs(czk - 500000) < 2000)
+    check("None остаётся None", currency.to_eur(None, "CZK"), None)
+
+
+def test_otomoto_slugs():
+    print("\nмодели otomoto")
+    from scrapers.otomoto import model_slug, looks_damaged
+    for brand, model, want in [("BMW", "320", ("seria-3", False)),
+                               ("BMW", "X5", ("x5", True)),
+                               ("Mercedes-Benz", "C 200", ("klasa-c", False)),
+                               ("Audi", "A4", ("a4", True)),
+                               ("Volkswagen", "Golf", ("golf", True))]:
+        check(f"{brand} {model}", model_slug(brand, model), want)
+    check("uszkodzony -> битая", looks_damaged("Uszkodzony przód"), True)
+    check("bezwypadkowy -> целая", looks_damaged("Bezwypadkowy, serwis ASO"), False)
+    check("nieuszkodzony -> целая", looks_damaged("Nieuszkodzony"), False)
+    lst = listing(model="Seria 3", title="BMW Seria 3", model_relaxed=True)
+    check("ослабленная модель проходит", matches(lst, {"models": ["320"]}), True)
+    strict = listing(model="Seria 3", title="BMW Seria 3")
+    check("без послабления не проходит", matches(strict, {"models": ["320"]}), False)
+
+
 def test_matcher():
     print("\nматчер")
     check("одна из двух марок", matches(listing(brand="Audi"), {"brands": ["BMW", "Audi"]}), True)
@@ -313,6 +345,26 @@ def test_countries_gating():
     check("bazos только SK", BazosScraper.serves(["D"]), False)
     check("willhaben только AT", WillhabenScraper.serves(["A"]), True)
     check("mobile.de везде", MobileDeScraper.serves(["SK"]), True)
+    from scrapers.otomoto import OtomotoScraper
+    from scrapers.sauto import SautoScraper
+    check("sauto только CZ", SautoScraper.serves(["CZ"]), True)
+    check("sauto не для D", SautoScraper.serves(["D"]), False)
+    check("otomoto только PL", OtomotoScraper.serves(["PL"]), True)
+    import os
+    from scrapers.openlane import OpenLaneScraper
+    was = os.environ.pop("OPENLANE", None)
+    check("openlane выключен без флага", OpenLaneScraper.serves(["D"]), False)
+    os.environ["OPENLANE"] = "1"
+    check("openlane включается флагом", OpenLaneScraper.serves(["D"]), True)
+    q = OpenLaneScraper._query({"brand": "BMW", "model": "3 Series",
+                                "price_max": 25000, "year_from": 2016})
+    check("запрос openlane: марка", q["MakeModels"], [{"Make": "BMW", "Models": ["3 Series"]}])
+    check("запрос openlane: цена", q["PriceRange"]["To"], 25000)
+    check("запрос openlane: год", q["RegistrationYearRange"]["From"], 2016)
+    if was is None:
+        os.environ.pop("OPENLANE", None)
+    else:
+        os.environ["OPENLANE"] = was
     s = AutoScout24Scraper(load_brands())
     check("неизвестный код страны выкинут",
           s._params({"brand": "BMW", "countries": ["D", "A", "SK"]}, 1)["cy"], "A,D")
@@ -323,11 +375,14 @@ def test_live():
     from scrapers.autoscout24 import AutoScout24Scraper
     from scrapers.bazos import BazosScraper
     from scrapers.mobilede import MobileDeScraper
+    from scrapers.otomoto import OtomotoScraper
+    from scrapers.sauto import SautoScraper
     from scrapers.willhaben import WillhabenScraper
     brands = load_brands()
     prof = {"name": "t", "brands": ["BMW"], "models": ["320"], "brand": "BMW", "model": "320",
-            "price_max": 20000, "exclude_damaged": 1}
-    for cls in (AutoScout24Scraper, MobileDeScraper, BazosScraper, WillhabenScraper):
+            "price_max": 30000, "year_from": 2015, "exclude_damaged": 1}
+    for cls in (AutoScout24Scraper, MobileDeScraper, BazosScraper, WillhabenScraper,
+                SautoScraper, OtomotoScraper):
         try:
             got = cls(brands).search(prof, max_pages=1)
         except Exception as exc:
@@ -341,6 +396,9 @@ def test_live():
         countries = {l.country for l in got}
         check(f"{cls.source}: цены разобраны", all(l.price_eur is not None for l in got[:5]))
         check(f"{cls.source}: страна проставлена", None not in countries)
+        years = [l.year for l in got if l.year]
+        check(f"{cls.source}: годы правдоподобны",
+              not years or all(1980 <= y <= 2027 for y in years))
         check(f"{cls.source}: фото есть", with_photo > 0)
         print(f"       {len(got)} шт | после фильтра {len(kept)} | страны {countries}"
               f" | с фото {with_photo}")
@@ -354,6 +412,8 @@ def main():
     test_normalizers()
     test_brands()
     test_damage()
+    test_currency()
+    test_otomoto_slugs()
     test_matcher()
     test_expand()
     test_db()

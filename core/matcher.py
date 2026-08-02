@@ -28,7 +28,8 @@ def matches(listing, profile: dict) -> bool:
     if brands and not any(b in (listing.brand or "").lower() for b in brands):
         return False
     models = _values(profile, "models", "model")
-    if models and not any(_model_matches(listing, m) for m in models):
+    if (models and not getattr(listing, "model_relaxed", False)
+            and not any(_model_matches(listing, m) for m in models)):
         return False
 
     if profile.get("year_from") and listing.year and listing.year < profile["year_from"]:

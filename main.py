@@ -28,10 +28,15 @@ from scrapers.autoscout24 import AutoScout24Scraper
 from scrapers.base import BotWallError
 from scrapers.bazos import BazosScraper
 from scrapers.mobilede import MobileDeScraper
+from scrapers.openlane import OpenLaneScraper
+from scrapers.otomoto import OtomotoScraper
+from scrapers.sauto import SautoScraper
 from scrapers.willhaben import WillhabenScraper
 
 # every source is tried for a search unless its country is not in the profile
-SOURCES = [AutoScout24Scraper, MobileDeScraper, BazosScraper, WillhabenScraper]
+SOURCES = [AutoScout24Scraper, MobileDeScraper, BazosScraper, WillhabenScraper,
+           SautoScraper, OtomotoScraper,
+           OpenLaneScraper]      # off unless OPENLANE=1 - it needs a real browser
 
 ROOT = Path(__file__).resolve().parent
 SEARCHES_PATH = ROOT / "config" / "searches.yml"
@@ -103,7 +108,9 @@ def scrape_profile(scraper, profile: dict, max_pages: int, seen_ids) -> list:
 
 def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
     """Scrape every active search and return the alerts that should go out."""
-    scrapers = [cls(brands) for cls in SOURCES]
+    # sauto/otomoto price in CZK/PLN and cache the ECB rate in the db
+    scrapers = [cls(brands, db=db) if "db" in cls.__init__.__code__.co_varnames
+                else cls(brands) for cls in SOURCES]
     pending = []
 
     for row in db.dequeue_all():           # overflow from the previous run goes first

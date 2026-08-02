@@ -23,7 +23,9 @@ ALBUM_DELAY = 2.5         # albums count as several messages, so pause longer
 FUEL_LABEL = {"diesel": "дизель", "petrol": "бензин", "hybrid": "гибрид", "electric": "электро"}
 GEARBOX_LABEL = {"manual": "механика", "automatic": "автомат"}
 SOURCE_LABEL = {"mobilede": "mobile.de", "autoscout24": "autoscout24",
-                "bazos": "bazos.sk", "willhaben": "willhaben.at"}
+                "bazos": "bazos.sk", "willhaben": "willhaben.at",
+                "sauto": "sauto.cz", "otomoto": "otomoto.pl",
+                "openlane": "openlane (аукцион)"}
 
 
 @dataclass

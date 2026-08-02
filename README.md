@@ -146,13 +146,48 @@ Filters are applied server-side on both sites and re-checked locally in
 
 ## How each source is read
 
-| | autoscout24 | mobile.de | bazos.sk | willhaben.at |
-|---|---|---|---|---|
-| Countries | D A B NL L I E F | D A B NL L I E F SK CZ PL | SK | A |
-| Data | `__NEXT_DATA__` JSON | native JSON | HTML | `__NEXT_DATA__` JSON |
-| Sort | `sort=age&desc=1` | `sb=ct&od=down` | site default | `sort=1` |
-| Paging | `page=1..3` | none — `psz` ≤200 in one request | `crz` offset | `page=1..3` |
-| Auth | none | `X-Mobile-Client: de.mobile.android.app` | none | none |
+| | autoscout24 | mobile.de | bazos.sk | willhaben.at | sauto.cz | otomoto.pl | openlane.eu |
+|---|---|---|---|---|---|---|---|
+| Countries | D A B NL L I E F | + SK CZ PL | SK | A | CZ | PL | all EU |
+| Data | `__NEXT_DATA__` | native JSON | HTML | `__NEXT_DATA__` | public JSON API | `<article data-id>` HTML | internal JSON API |
+| Currency | EUR | EUR | EUR | EUR | **CZK** | **PLN** | EUR |
+| Auth | none | `X-Mobile-Client` header | none | none | none | none | headless browser |
+
+`sauto.cz` and `otomoto.pl` quote local currency; both are converted with the
+ECB daily reference rate, cached in the db for a day (`core/currency.py`).
+Without that, `price_max` on those two would be nonsense.
+
+Two taxonomy traps, both handled:
+- sauto has no manufacturer filter (only free-text `phrase`) and leaves
+  `manufacturing_date` empty on most ads with no server-side year filter, so the
+  build year is topped up from its detail endpoint — capped at 40 lookups a run.
+  Falling back to `create_date` would have stamped everything 2026 and sailed
+  past every `year_from`.
+- otomoto knows `seria-3`, not `320`. The scraper maps numeric BMW/Mercedes
+  models to their family and marks those listings `model_relaxed`, so the
+  matcher trusts otomoto's own filter instead of dropping all of them. A "320"
+  search therefore returns the whole 3 series from Poland.
+
+### openlane.eu — opt-in, needs a browser
+
+A B2B auction site behind Cloudflare: plain requests get 403, and so does
+Playwright's own request context. What works is a headless Chromium that opens
+the page and then calls the site's search endpoint **from inside it**, reusing
+the page cookies and anti-forgery token.
+
+```bash
+pip install playwright && playwright install chromium
+OPENLANE=1 python main.py
+```
+
+Without `OPENLANE=1` the source reports `serves() == False` and is skipped
+silently. It stays off on GitHub Actions on purpose — no browser, and a
+datacenter IP that Cloudflare rates poorly.
+
+Reverse-engineered query keys: `MakeModels`, `PriceRange`,
+`RegistrationYearRange`. Mileage, fuel and gearbox keys were not found and are
+filtered locally. These are **auctions**: the price shown is the buy-now price
+when the lot has one, otherwise the current bid, which can still climb.
 
 A source only runs when the search's `countries` overlap the ones it serves, so
 a `["SK"]` search never touches autoscout24 and a `["D"]` search never touches

@@ -64,6 +64,10 @@ class Listing:
     country: Optional[str] = None       # ISO-2, e.g. DE / AT / SK
     city: Optional[str] = None
     damaged: Optional[bool] = None      # None = the source did not say
+    # set when a source can only narrow to a model *family* (otomoto knows
+    # "seria-3", not "320"); the matcher then trusts the source's own filter
+    # instead of dropping everything
+    model_relaxed: bool = False
     dealer_id: Optional[str] = None     # seller, for the "hide dealer" button
     dealer_name: Optional[str] = None
     first_seen: Optional[str] = None    # filled by db on insert
