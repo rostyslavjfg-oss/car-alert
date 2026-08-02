@@ -16,11 +16,19 @@ def _model_matches(listing, wanted: str) -> bool:
     return wanted in (listing.title or "").lower()
 
 
+def _values(profile: dict, plural: str, singular: str) -> list:
+    values = profile.get(plural)
+    if values is None:
+        values = [profile[singular]] if profile.get(singular) else []
+    return [v for v in values if v]
+
+
 def matches(listing, profile: dict) -> bool:
-    brand = (profile.get("brand") or "").lower()
-    if brand and brand not in (listing.brand or "").lower():
+    brands = [b.lower() for b in _values(profile, "brands", "brand")]
+    if brands and not any(b in (listing.brand or "").lower() for b in brands):
         return False
-    if not _model_matches(listing, profile.get("model")):
+    models = _values(profile, "models", "model")
+    if models and not any(_model_matches(listing, m) for m in models):
         return False
 
     if profile.get("year_from") and listing.year and listing.year < profile["year_from"]:
@@ -40,9 +48,11 @@ def matches(listing, profile: dict) -> bool:
         return False
 
     # unknown fuel/gearbox on the listing is not a reason to drop it
-    if profile.get("fuel") and listing.fuel and listing.fuel != profile["fuel"]:
+    fuels = _values(profile, "fuels", "fuel")
+    if fuels and listing.fuel and listing.fuel not in fuels:
         return False
-    if profile.get("gearbox") and listing.gearbox and listing.gearbox != profile["gearbox"]:
+    gearboxes = _values(profile, "gearboxes", "gearbox")
+    if gearboxes and listing.gearbox and listing.gearbox not in gearboxes:
         return False
     return True
 

@@ -57,14 +57,18 @@ CREATE TABLE IF NOT EXISTS searches (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     chat_id     TEXT NOT NULL,
     name        TEXT NOT NULL,
-    brand       TEXT NOT NULL,
+    brand       TEXT NOT NULL,           -- kept for old rows; brands is the live column
+    brands      TEXT,                    -- comma separated, one search may span makes
     model       TEXT,
+    models      TEXT,
     year_from   INTEGER,
     price_min   INTEGER,
     price_max   INTEGER,
     mileage_max INTEGER,
     fuel        TEXT,
+    fuels       TEXT,
     gearbox     TEXT,
+    gearboxes   TEXT,
     countries   TEXT DEFAULT 'D',        -- comma separated autoscout24 codes
     exclude_damaged INTEGER NOT NULL DEFAULT 1,
     paused      INTEGER NOT NULL DEFAULT 0,
@@ -128,6 +132,10 @@ MIGRATIONS = [
     ("listings", "city", "TEXT"),
     ("listings", "damaged", "INTEGER"),
     ("searches", "exclude_damaged", "INTEGER NOT NULL DEFAULT 1"),
+    ("searches", "brands", "TEXT"),
+    ("searches", "models", "TEXT"),
+    ("searches", "fuels", "TEXT"),
+    ("searches", "gearboxes", "TEXT"),
     ("listings", "dealer_id", "TEXT"),
     ("listings", "dealer_name", "TEXT"),
     ("notification_queue", "chat_id", "TEXT"),
@@ -256,15 +264,34 @@ class Db:
             (listing_id, search_name, kind))
 
     # --- searches (owned by the bot) --------------------------------------
+    @staticmethod
+    def _as_list(profile: dict, plural: str, singular: str) -> list:
+        """Accept either the list form or a single legacy value."""
+        values = profile.get(plural)
+        if values is None:
+            values = [profile[singular]] if profile.get(singular) else []
+        return [str(v) for v in values if v]
+
     def add_search(self, chat_id, profile: dict) -> int:
+        brands = self._as_list(profile, "brands", "brand")
+        if not brands:
+            raise ValueError("a search needs at least one brand")
+        models = self._as_list(profile, "models", "model")
+        fuels = self._as_list(profile, "fuels", "fuel")
+        gearboxes = self._as_list(profile, "gearboxes", "gearbox")
         cur = self.conn.execute(
-            """INSERT INTO searches (chat_id, name, brand, model, year_from, price_min,
-                                     price_max, mileage_max, fuel, gearbox, countries,
+            """INSERT INTO searches (chat_id, name, brand, brands, model, models,
+                                     year_from, price_min, price_max, mileage_max,
+                                     fuel, fuels, gearbox, gearboxes, countries,
                                      exclude_damaged, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (str(chat_id), profile["name"], profile["brand"], profile.get("model"),
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (str(chat_id), profile["name"],
+             brands[0], ",".join(brands),
+             models[0] if models else None, ",".join(models),
              profile.get("year_from"), profile.get("price_min"), profile.get("price_max"),
-             profile.get("mileage_max"), profile.get("fuel"), profile.get("gearbox"),
+             profile.get("mileage_max"),
+             fuels[0] if fuels else None, ",".join(fuels),
+             gearboxes[0] if gearboxes else None, ",".join(gearboxes),
              ",".join(profile.get("countries") or ["D"]),
              int(profile.get("exclude_damaged", 1)), now()))
         self.conn.commit()
@@ -287,6 +314,14 @@ class Db:
     def _row_to_profile(row) -> dict:
         p = dict(row)
         p["countries"] = [c for c in (p.get("countries") or "D").split(",") if c]
+        # rows written before multi-select carry only the singular column
+        for plural, singular in (("brands", "brand"), ("models", "model"),
+                                 ("fuels", "fuel"), ("gearboxes", "gearbox")):
+            raw = p.get(plural)
+            values = [v for v in (raw or "").split(",") if v]
+            if not values and p.get(singular):
+                values = [p[singular]]
+            p[plural] = values
         return p
 
     def get_search(self, search_id: int, chat_id=None):

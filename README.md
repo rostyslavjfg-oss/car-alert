@@ -22,7 +22,7 @@ From then on the cron takes over.
 | command | what it does |
 |---|---|
 | `/start` | registers your chat |
-| `/add` | 8-step dialog: brand → model → year → price → mileage → fuel → gearbox → countries (`-` skips a step) |
+| `/add` | 8-step dialog: brands → models → year → price → mileage → fuel → gearbox → countries |
 | `/list` | your searches, each with ⏸ Pause / 🗑 Delete buttons |
 | `/del <id>` `/pause <id>` `/resume <id>` | same, by id |
 | `/fav` | saved listings |
@@ -30,6 +30,18 @@ From then on the cron takes over.
 | `/run` | scrape immediately (only when `bot.py` is running) |
 | `/status` | counters and last run time |
 | `/cancel` | abort the `/add` dialog |
+
+**Brands, models, fuel, gearbox and countries are multi-select** — tap to toggle,
+«Готово» closes the step. Anything typed by hand is added to the selection, so a
+make or model missing from the list still works. The models step is skipped when
+more than one brand is picked: models belong to one make, and asking for
+"BMW + Audi → 320 or A4" would need a per-brand sub-dialog.
+
+One search with several makes becomes several requests per source (brand and
+model are single-valued on every site), capped at 12 combinations per source per
+run — anything dropped is logged, never silently. Fuel and gearbox go the other
+way: one value is passed to the site's own filter, several are filtered locally
+instead of multiplying requests.
 
 A persistent keyboard sits under the input field, so nothing has to be typed:
 **➕ Новый поиск · 📋 Мои поиски · 🔍 Искать сейчас · ❤️ Избранное ·
@@ -87,6 +99,17 @@ world-readable on a public repo. Verdicts travel back through
 `Telegram.WebApp.sendData()`, which only works for a Mini App opened from a
 **reply-keyboard** button; an inline button cannot report back, which is why the
 swipe entry point lives on the bottom keyboard.
+
+## Tests
+
+```bash
+python tests.py          # 86 offline checks, no network
+python tests.py --live   # + 16 checks against the four live sites
+```
+
+Covers parsing, brand resolution, damage detection incl. Slovak negations, the
+matcher, profile expansion, the db round-trip, captions, the whole /add dialog
+driven by synthetic Telegram updates, keyboard wiring and country gating.
 
 ## Local usage
 

@@ -114,41 +114,70 @@ def _model_options(draft: dict, bot_data: dict) -> list:
     return [m["n"] for m in models if not m.get("g") and m.get("n")][:24]
 
 
-# (key, question, parser, options) - options is a list or f(draft, bot_data) -> list
-STEPS = [
-    ("brand", "Марка?", _opt_text, POPULAR_BRANDS),
-    ("model", "Модель?", _opt_text, _model_options),
-    ("year_from", "Год от?", _opt_int,
-     ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]),
-    ("price_max", "Максимальная цена, €?", _opt_int,
-     ["5000", "7500", "10000", "15000", "20000", "25000", "30000", "40000", "50000"]),
-    ("mileage_max", "Максимальный пробег, км?", _opt_int,
-     ["50000", "100000", "150000", "200000", "250000"]),
-    ("fuel", "Топливо?", _choice(FUEL_CHOICE), ["дизель", "бензин", "гибрид", "электро"]),
-    ("gearbox", "Коробка?", _choice(GEARBOX_CHOICE), ["автомат", "механика"]),
-    ("countries", "Страны? Отметь нужные и жми «Готово»", _countries, None),
-]
-STEP_INDEX = {name: i for i, (name, _, _, _) in enumerate(STEPS)}
-
 COUNTRIES = [("D", "Германия"), ("A", "Австрия"), ("SK", "Словакия"), ("CZ", "Чехия"),
              ("PL", "Польша"), ("NL", "Нидерланды"), ("B", "Бельгия"),
              ("I", "Италия"), ("F", "Франция")]
 
 
+def _pairs(values):
+    """[v, ...] -> [(value, label), ...]"""
+    return [(str(v), str(v)) for v in values]
+
+
+def _brand_pairs(draft, bot_data):
+    return _pairs(POPULAR_BRANDS)
+
+
+def _model_pairs(draft, bot_data):
+    # models belong to one make, so this step is only asked for a single brand
+    return _pairs(_model_options(draft, bot_data))
+
+
+# Multi steps store a list under `key`; single steps store one value.
+# options: list of (value, label) or f(draft, bot_data) -> same.
+STEPS = [
+    {"key": "brands", "q": "Марки? Отметь нужные и жми «Готово»",
+     "multi": True, "required": True, "options": _brand_pairs, "parse": _opt_text},
+    {"key": "models", "q": "Модели? Можно несколько",
+     "multi": True, "options": _model_pairs, "parse": _opt_text,
+     "skip_if": lambda draft: len(draft.get("brands") or []) != 1},
+    {"key": "year_from", "q": "Год от?", "parse": _opt_int,
+     "options": _pairs([2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023])},
+    {"key": "price_max", "q": "Максимальная цена, €?", "parse": _opt_int,
+     "options": _pairs([5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000])},
+    {"key": "mileage_max", "q": "Максимальный пробег, км?", "parse": _opt_int,
+     "options": _pairs([50000, 100000, 150000, 200000, 250000])},
+    {"key": "fuels", "q": "Топливо? Можно несколько", "multi": True, "parse": _choice(FUEL_CHOICE),
+     "options": [("diesel", "дизель"), ("petrol", "бензин"),
+                 ("hybrid", "гибрид"), ("electric", "электро")]},
+    {"key": "gearboxes", "q": "Коробка? Можно обе", "multi": True,
+     "parse": _choice(GEARBOX_CHOICE),
+     "options": [("automatic", "автомат"), ("manual", "механика")]},
+    {"key": "countries", "q": "Страны? Отметь нужные и жми «Готово»",
+     "multi": True, "parse": _countries, "options": COUNTRIES},
+]
+STEP_INDEX = {step["key"]: i for i, step in enumerate(STEPS)}
+
+
 # --- rendering ---------------------------------------------------------------
 
 def describe(profile: dict) -> str:
-    bits = [f"<b>{html.escape(profile['brand'])}"
-            + (f" {html.escape(profile['model'])}" if profile.get("model") else "") + "</b>"]
+    brands = profile.get("brands") or ([profile["brand"]] if profile.get("brand") else [])
+    models = profile.get("models") or ([profile["model"]] if profile.get("model") else [])
+    head = " / ".join(html.escape(b) for b in brands)
+    if models:
+        head += " " + " / ".join(html.escape(m) for m in models)
+    bits = [f"<b>{head}</b>"]
     if profile.get("year_from"):
         bits.append(f"{profile['year_from']}+")
     if profile.get("price_max"):
         bits.append(f"≤{profile['price_max']:,}€".replace(",", " "))
     if profile.get("mileage_max"):
         bits.append(f"≤{profile['mileage_max']:,} km".replace(",", " "))
-    for key in ("fuel", "gearbox"):
-        if profile.get(key):
-            bits.append(VALUE_LABEL.get(profile[key], profile[key]))
+    for key in ("fuels", "gearboxes"):
+        values = profile.get(key) or []
+        if values:
+            bits.append("/".join(VALUE_LABEL.get(v, v) for v in values))
     bits.append("/".join(profile.get("countries") or ["D"]))
     if profile.get("exclude_damaged", 1):
         bits.append("без аварий")
@@ -224,22 +253,29 @@ def dialog_keyboard(step: str = "", options=None) -> ReplyKeyboardMarkup:
 
 
 def step_options(index: int, draft: dict, bot_data: dict) -> list:
-    options = STEPS[index][3]
+    """-> [(value, label), ...]"""
+    options = STEPS[index].get("options")
     if callable(options):
-        return options(draft, bot_data) or []
-    return options or []
+        options = options(draft, bot_data)
+    return list(options or [])
 
 
-def countries_keyboard(selected) -> InlineKeyboardMarkup:
-    """Multi-select: every tap toggles one country, «Готово» closes the step."""
-    chosen = set(selected or [])
-    buttons = [InlineKeyboardButton(("✅ " if code in chosen else "▫️ ") + name,
-                                    callback_data=f"cty:{code}")
-               for code, name in COUNTRIES]
-    rows = _chunk(buttons, 2)
-    rows.append([InlineKeyboardButton(
-        f"Готово ({len(chosen)})" if chosen else "Готово — только Германия",
-        callback_data="cty:done")])
+def multi_keyboard(index: int, options: list, chosen) -> InlineKeyboardMarkup:
+    """Every tap toggles one option; «Готово» closes the step.
+
+    Callback data carries the option's position, not its value: a make like
+    "Mercedes-AMG GT 4-Door Coupé" would blow the 64-byte callback limit.
+    """
+    picked = set(chosen or [])
+    buttons = [InlineKeyboardButton(("✅ " if value in picked else "▫️ ") + label,
+                                    callback_data=f"ms:{index}:{i}")
+               for i, (value, label) in enumerate(options)]
+    per_row = 2 if any(len(l) > 11 for _, l in options) else 3
+    rows = _chunk(buttons, per_row)
+    done = f"Готово ({len(picked)})" if picked else "Готово — не важно"
+    if STEPS[index].get("required") and not picked:
+        done = "Выбери хотя бы одну"
+    rows.append([InlineKeyboardButton(done, callback_data=f"ms:{index}:done")])
     return InlineKeyboardMarkup(rows)
 
 
@@ -273,20 +309,28 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ask_step(message, context, db, chat_id, index: int, draft: dict):
-    """Store the step and ask its question with the right keyboard."""
-    key, question, _, _ = STEPS[index]
-    db.set_dialog(chat_id, key, draft)
-    prefix = f"({index + 1}/{len(STEPS)}) "
-    if key == "countries":
-        await message.reply_text(prefix + question,
-                                 reply_markup=countries_keyboard(draft.get("countries")))
+    """Ask the step at `index`, skipping the ones that do not apply."""
+    while index < len(STEPS) and STEPS[index].get("skip_if", lambda d: False)(draft):
+        index += 1
+    if index >= len(STEPS):
+        await finish_dialog(message, db, chat_id, draft)
         return
+
+    step = STEPS[index]
+    db.set_dialog(chat_id, step["key"], draft)
+    prefix = f"({index + 1}/{len(STEPS)}) "
     options = step_options(index, draft, context.application.bot_data)
-    # the model list is truncated, so the hint has to stay even when it is not empty
-    hint = ("\n\nНет в списке — просто напиши."
-            if not options or key == "model" else "")
-    await message.reply_text(prefix + question + hint, parse_mode=ParseMode.HTML,
-                             reply_markup=dialog_keyboard(key, options))
+
+    if step.get("multi"):
+        hint = "" if options else "\n\nСписок пуст — напиши значения текстом."
+        await message.reply_text(prefix + step["q"] + hint,
+                                 reply_markup=multi_keyboard(index, options,
+                                                             draft.get(step["key"])))
+        return
+    hint = "\n\nНет в списке — просто напиши." if not options else ""
+    await message.reply_text(prefix + step["q"] + hint, parse_mode=ParseMode.HTML,
+                             reply_markup=dialog_keyboard(step["key"],
+                                                          [l for _, l in options]))
 
 
 async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -322,38 +366,59 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     index = STEP_INDEX[step]
-    key, _, parse, _ = STEPS[index]
-    try:
-        value = parse(update.message.text or "")
-    except ValueError as exc:
-        await update.message.reply_text(
-            f"{exc}. Попробуй ещё раз.",
-            reply_markup=dialog_keyboard(step, step_options(index, draft,
-                                                            context.application.bot_data)))
+    spec = STEPS[index]
+    options = step_options(index, draft, context.application.bot_data)
+
+    # a label typed by hand (or tapped on the reply keyboard) counts as its value
+    by_label = {str(label).lower(): value for value, label in options}
+    typed = text.lower()
+    if typed in by_label:
+        value = by_label[typed]
+    else:
+        try:
+            value = spec["parse"](text)
+        except ValueError as exc:
+            await update.message.reply_text(
+                f"{exc}. Попробуй ещё раз.",
+                reply_markup=dialog_keyboard(step, [l for _, l in options]))
+            return
+
+    if spec.get("multi"):
+        await _add_typed_to_multi(update, context, db, chat_id, index, draft, value)
         return
 
-    if key == "brand":
-        if not value:
-            await update.message.reply_text(
-                "Марку пропустить нельзя — выбери кнопкой или напиши.",
-                reply_markup=dialog_keyboard("brand", POPULAR_BRANDS))
-            return
+    draft[spec["key"]] = value
+    await ask_step(update.message, context, db, chat_id, index + 1, draft)
+
+
+async def _add_typed_to_multi(update, context, db, chat_id, index, draft, value):
+    """Typing during a multi step appends to the selection and redraws it."""
+    spec = STEPS[index]
+    values = [value] if not isinstance(value, list) else list(value)
+    if spec["key"] == "brands":
         brands = context.application.bot_data.get("brands") or {}
-        match = _resolve_brand(brands, value)
-        if not match:
+        resolved = [_resolve_brand(brands, v) for v in values]
+        unknown = [v for v, r in zip(values, resolved) if not r]
+        if unknown:
             await update.message.reply_text(
-                f"Марки «{html.escape(str(value))}» нет в справочнике. "
-                "Проверь написание и пришли ещё раз.",
-                parse_mode=ParseMode.HTML,
-                reply_markup=dialog_keyboard("brand", POPULAR_BRANDS))
+                "Не нашёл в справочнике: " + html.escape(", ".join(map(str, unknown))),
+                parse_mode=ParseMode.HTML)
             return
-        value = match
-    draft[key] = value
+        values = resolved
 
-    if index + 1 < len(STEPS):
-        await ask_step(update.message, context, db, chat_id, index + 1, draft)
-        return
-    await finish_dialog(update.message, db, chat_id, draft)
+    chosen = list(draft.get(spec["key"]) or [])
+    for v in values:
+        if v and v not in chosen:
+            chosen.append(v)
+    draft[spec["key"]] = chosen
+    db.set_dialog(chat_id, spec["key"], draft)
+    options = step_options(index, draft, context.application.bot_data)
+    # typed values may be outside the option list - show them so they can be removed
+    known = {v for v, _ in options}
+    options = options + [(v, v) for v in chosen if v not in known]
+    await update.message.reply_text(
+        f"({index + 1}/{len(STEPS)}) {spec['q']}",
+        reply_markup=multi_keyboard(index, options, chosen))
 
 
 async def finish_dialog(message, db, chat_id, draft: dict):
@@ -402,9 +467,14 @@ def _resolve_brand(brands: dict, name):
 
 
 def _unique_name(db: Db, chat_id, draft: dict) -> str:
-    base = "-".join(filter(None, [str(draft.get("brand", "")).lower().replace(" ", "-"),
-                                  str(draft.get("model") or "").lower().replace(" ", "-"),
-                                  draft.get("fuel") or ""])) or "search"
+    brands = draft.get("brands") or []
+    models = draft.get("models") or []
+    parts = ["+".join(brands[:2]).lower().replace(" ", "-")]
+    if models:
+        parts.append("+".join(models[:2]).lower().replace(" ", "-"))
+    if len(brands) > 2 or len(models) > 2:
+        parts.append("more")
+    base = "-".join(filter(None, parts)) or "search"
     name, n = base, 2
     while db.search_name_taken(chat_id, name):
         name, n = f"{base}-{n}", n + 1
@@ -530,6 +600,53 @@ async def on_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=main_keyboard(db, chat_id))
 
 
+async def _on_multi_tap(query, context, db, chat_id, payload: str):
+    """payload is "<step index>:<option index>" or "<step index>:done"."""
+    step_key, draft = db.get_dialog(chat_id)
+    try:
+        index_text, choice = payload.split(":", 1)
+        index = int(index_text)
+    except ValueError:
+        await query.answer()
+        return
+    if step_key != STEPS[index]["key"]:
+        await query.answer("Этот шаг уже пройден")
+        return
+
+    spec = STEPS[index]
+    chosen = list(draft.get(spec["key"]) or [])
+    options = step_options(index, draft, context.application.bot_data)
+    known = {v for v, _ in options}
+    options = options + [(v, v) for v in chosen if v not in known]
+
+    if choice == "done":
+        if spec.get("required") and not chosen:
+            await query.answer("Нужно выбрать хотя бы одну", show_alert=True)
+            return
+        draft[spec["key"]] = chosen
+        labels = dict(options)
+        await query.answer()
+        await query.edit_message_text(
+            f"{spec['q'].split('?')[0]}: " +
+            (", ".join(labels.get(c, c) for c in chosen) if chosen else "не важно"))
+        await ask_step(query.message, context, db, chat_id, index + 1, draft)
+        return
+
+    try:
+        value = options[int(choice)][0]
+    except (ValueError, IndexError):
+        await query.answer()
+        return
+    if value in chosen:
+        chosen.remove(value)
+    else:
+        chosen.append(value)
+    draft[spec["key"]] = chosen
+    db.set_dialog(chat_id, spec["key"], draft)
+    await query.answer()
+    await query.edit_message_reply_markup(multi_keyboard(index, options, chosen))
+
+
 # --- callbacks ---------------------------------------------------------------
 
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -538,27 +655,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     action, _, payload = (query.data or "").partition(":")
 
-    if action == "cty":
-        step, draft = db.get_dialog(chat_id)
-        if step != "countries":
-            await query.answer("Этот шаг уже пройден")
-            return
-        chosen = list(draft.get("countries") or [])
-        if payload == "done":
-            draft["countries"] = chosen or ["D"]
-            await query.answer()
-            await query.edit_message_text(
-                "Страны: " + ", ".join(dict(COUNTRIES).get(c, c) for c in draft["countries"]))
-            await finish_dialog(query.message, db, chat_id, draft)
-            return
-        if payload in chosen:
-            chosen.remove(payload)
-        else:
-            chosen.append(payload)
-        draft["countries"] = chosen
-        db.set_dialog(chat_id, "countries", draft)
-        await query.answer()
-        await query.edit_message_reply_markup(countries_keyboard(chosen))
+    if action == "ms":
+        await _on_multi_tap(query, context, db, chat_id, payload)
     elif action == "fav":
         added = db.toggle_favorite(chat_id, payload)
         await query.answer("Добавил в избранное" if added else "Убрал из избранного")

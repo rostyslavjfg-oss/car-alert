@@ -58,6 +58,35 @@ def import_yaml_searches(db: Db) -> int:
     return len(profiles)
 
 
+MAX_COMBOS = 12          # brand x model requests per source per run
+
+
+def expand_profile(profile: dict) -> list:
+    """One search may span several makes and models; sources take one of each.
+
+    Fuel and gearbox stay in the profile instead: with a single value the source
+    filters server-side, with several it is cheaper to filter locally than to
+    multiply the requests.
+    """
+    brands = profile.get("brands") or ([profile["brand"]] if profile.get("brand") else [])
+    models = profile.get("models") or ([profile["model"]] if profile.get("model") else [])
+    fuels = profile.get("fuels") or []
+    gearboxes = profile.get("gearboxes") or []
+
+    combos = []
+    for brand in brands:
+        # models belong to one make, so they only apply when there is one
+        for model in (models if len(brands) == 1 and models else [None]):
+            combos.append({**profile, "brand": brand, "model": model,
+                           "fuel": fuels[0] if len(fuels) == 1 else None,
+                           "gearbox": gearboxes[0] if len(gearboxes) == 1 else None})
+    if len(combos) > MAX_COMBOS:
+        log.warning("  search %s: %d brand/model combos, keeping the first %d",
+                    profile.get("name"), len(combos), MAX_COMBOS)
+        combos = combos[:MAX_COMBOS]
+    return combos
+
+
 def scrape_profile(scraper, profile: dict, max_pages: int, seen_ids) -> list:
     """Never let one source/profile failure kill the run."""
     try:
@@ -87,11 +116,17 @@ def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
         name, chat_id = profile["name"], profile["chat_id"]
         blocked = db.blocked_dealers(chat_id)
         log.info("search #%s %s", profile["id"], name)
+        combos = expand_profile(profile)
         for scraper in scrapers:
             if not scraper.serves(profile.get("countries")):
                 continue
             seen_ids = db.known_ids(scraper.source)
-            fetched = scrape_profile(scraper, profile, max_pages, seen_ids)
+            fetched, by_id = [], set()
+            for combo in combos:          # several makes -> several requests
+                for listing in scrape_profile(scraper, combo, max_pages, seen_ids):
+                    if listing.id not in by_id:
+                        by_id.add(listing.id)
+                        fetched.append(listing)
             new = [l for l in fetched if l.id not in seen_ids]
             matched = [l for l in filter_matching(new, profile) if l.dealer_key not in blocked]
             known = [l for l in filter_matching([l for l in fetched if l.id in seen_ids], profile)
