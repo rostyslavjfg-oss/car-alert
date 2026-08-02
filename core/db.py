@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS listings (
     gearbox     TEXT,
     url         TEXT,
     image_url   TEXT,
+    title       TEXT,
     dealer_id   TEXT,
     dealer_name TEXT,
     first_seen  TEXT NOT NULL,
@@ -106,11 +107,26 @@ CREATE INDEX IF NOT EXISTS idx_searches_chat ON searches(chat_id);
 
 # columns added after the first release - applied to existing db files on open
 MIGRATIONS = [
+    ("listings", "title", "TEXT"),
     ("listings", "dealer_id", "TEXT"),
     ("listings", "dealer_name", "TEXT"),
     ("notification_queue", "chat_id", "TEXT"),
     ("notification_queue", "search_id", "INTEGER"),
 ]
+
+
+def load_env(path=None) -> None:
+    """Minimal .env loader so tokens never have to sit in the command line."""
+    path = Path(path or Path(__file__).resolve().parent.parent / ".env")
+    if not path.exists():
+        return
+    import os
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
 def now() -> str:
@@ -160,15 +176,17 @@ class Db:
         ts = now()
         self.conn.execute(
             """INSERT INTO listings (id, source, brand, model, year, mileage_km, price_eur,
-                                     fuel, gearbox, url, image_url, dealer_id, dealer_name,
-                                     first_seen, last_seen)
+                                     fuel, gearbox, url, image_url, title, dealer_id,
+                                     dealer_name, first_seen, last_seen)
                VALUES (:id, :source, :brand, :model, :year, :mileage_km, :price_eur,
-                       :fuel, :gearbox, :url, :image_url, :dealer_id, :dealer_name, :ts, :ts)
+                       :fuel, :gearbox, :url, :image_url, :title, :dealer_id,
+                       :dealer_name, :ts, :ts)
                ON CONFLICT(id) DO UPDATE SET
                    price_eur = excluded.price_eur,
                    mileage_km = excluded.mileage_km,
                    url = excluded.url,
                    image_url = excluded.image_url,
+                   title = excluded.title,
                    dealer_id = excluded.dealer_id,
                    dealer_name = excluded.dealer_name,
                    last_seen = excluded.last_seen""",

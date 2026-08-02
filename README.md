@@ -1,7 +1,7 @@
 # car-alert
 
-Free listing watcher for **mobile.de** and **autoscout24.com** with a Telegram
-bot front end. Runs on GitHub Actions every 30 minutes, keeps state in a
+Free listing watcher for **mobile.de**, **autoscout24.com**, **bazos.sk** and
+**willhaben.at** with a Russian-language Telegram bot front end. Runs on GitHub Actions every 30 minutes, keeps state in a
 committed SQLite file, pushes matches to your chat. No VPS, no paid APIs.
 
 ## Setup
@@ -86,13 +86,23 @@ Filters are applied server-side on both sites and re-checked locally in
 
 ## How each source is read
 
-| | autoscout24 | mobile.de |
-|---|---|---|
-| Endpoint | `/lst/{brand}/{model}` HTML | `www.mobile.de/svc/s/` JSON |
-| Data | `__NEXT_DATA__` JSON blob in the page | native JSON |
-| Sort | `sort=age&desc=1` | `sb=ct&od=down` |
-| Paging | `page=1..3` | none — `psz` up to 200 in one request |
-| Auth | none | `X-Mobile-Client: de.mobile.android.app` |
+| | autoscout24 | mobile.de | bazos.sk | willhaben.at |
+|---|---|---|---|---|
+| Countries | D A B NL L I E F | D A B NL L I E F SK CZ PL | SK | A |
+| Data | `__NEXT_DATA__` JSON | native JSON | HTML | `__NEXT_DATA__` JSON |
+| Sort | `sort=age&desc=1` | `sb=ct&od=down` | site default | `sort=1` |
+| Paging | `page=1..3` | none — `psz` ≤200 in one request | `crz` offset | `page=1..3` |
+| Auth | none | `X-Mobile-Client: de.mobile.android.app` | none | none |
+
+A source only runs when the search's `countries` overlap the ones it serves, so
+a `["SK"]` search never touches autoscout24 and a `["D"]` search never touches
+bazos. Passing a country a site does not know (`cy=D,A,SK` on autoscout24)
+silently returns zero results, so unsupported codes are filtered out per source.
+
+**Data quality differs.** autoscout24, mobile.de and willhaben return structured
+fields. bazos.sk has none — year, mileage, fuel and gearbox are parsed out of the
+seller's free text and stay `None` when they aren't written. The matcher treats
+an unknown field as "don't care", so a terse ad is never silently dropped.
 
 `suchen.mobile.de/fahrzeuge/search.html` answers **403** to non-browser clients,
 which is why the app-facing service is used instead. It returns the same ads
@@ -143,6 +153,18 @@ main.py                        orchestrator
 private seller shares one bucket `sellerId`** (7723851 today), so only real
 dealers get a blockable id there — otherwise one tap would hide every private
 ad. autoscout24 gives private sellers real ids, so they can be hidden.
+
+## Facebook Marketplace
+
+Not implemented, and not because of effort. It answers **HTTP 400** to any
+request without a logged-in session, so scraping it needs your personal Facebook
+cookies, a headless browser, and continuous maintenance against Meta's
+anti-automation. That also breaks their ToS and puts the account at risk of
+being restricted. bazos.sk covers the same need — private sellers, Slovakia —
+with a public page and no account on the line.
+
+If you still want it, say so: it would be a Playwright scraper reading
+`FB_SESSION_COOKIE` from the environment, and it should use a throwaway account.
 
 ## Caveats
 

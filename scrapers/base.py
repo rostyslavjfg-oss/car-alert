@@ -24,7 +24,7 @@ MIN_DELAY, MAX_DELAY = 2.0, 4.0
 
 # autoscout24 single-letter country codes -> ISO used by mobile.de
 COUNTRY_MAP = {"D": "DE", "A": "AT", "B": "BE", "NL": "NL", "L": "LU",
-               "I": "IT", "E": "ES", "F": "FR"}
+               "I": "IT", "E": "ES", "F": "FR", "SK": "SK", "CZ": "CZ", "PL": "PL"}
 
 FUEL_WORDS = {
     "diesel": "diesel",
@@ -52,6 +52,7 @@ class Listing:
     gearbox: Optional[str]
     url: str
     image_url: Optional[str]
+    title: Optional[str] = None         # raw ad headline, used where model is fuzzy
     dealer_id: Optional[str] = None     # seller, for the "hide dealer" button
     dealer_name: Optional[str] = None
     first_seen: Optional[str] = None    # filled by db on insert
@@ -70,6 +71,14 @@ class BotWallError(RuntimeError):
 
 class BaseScraper:
     source = "base"
+    # which search countries this source can serve; None = any
+    countries_served = None
+
+    @classmethod
+    def serves(cls, countries) -> bool:
+        if cls.countries_served is None:
+            return True
+        return bool({str(c).upper() for c in (countries or ["D"])} & cls.countries_served)
 
     def __init__(self, brands: dict, timeout: int = 25):
         self.brands = brands

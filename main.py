@@ -19,13 +19,18 @@ from pathlib import Path
 
 import yaml
 
-from core.db import Db, now
+from core.db import Db, load_env, now
 from core.matcher import filter_matching
 from core.notifier import Alert, Notifier, MAX_PER_RUN
 from fetch_mobile_makes import load_brands, resolve_missing, save_brands
 from scrapers.autoscout24 import AutoScout24Scraper
 from scrapers.base import BotWallError
+from scrapers.bazos import BazosScraper
 from scrapers.mobilede import MobileDeScraper
+from scrapers.willhaben import WillhabenScraper
+
+# every source is tried for a search unless its country is not in the profile
+SOURCES = [AutoScout24Scraper, MobileDeScraper, BazosScraper, WillhabenScraper]
 
 ROOT = Path(__file__).resolve().parent
 SEARCHES_PATH = ROOT / "config" / "searches.yml"
@@ -68,7 +73,7 @@ def scrape_profile(scraper, profile: dict, max_pages: int, seen_ids) -> list:
 
 def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
     """Scrape every active search and return the alerts that should go out."""
-    scrapers = [AutoScout24Scraper(brands), MobileDeScraper(brands)]
+    scrapers = [cls(brands) for cls in SOURCES]
     pending = []
 
     for row in db.dequeue_all():           # overflow from the previous run goes first
@@ -82,6 +87,8 @@ def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
         blocked = db.blocked_dealers(chat_id)
         log.info("search #%s %s", profile["id"], name)
         for scraper in scrapers:
+            if not scraper.serves(profile.get("countries")):
+                continue
             seen_ids = db.known_ids(scraper.source)
             fetched = scrape_profile(scraper, profile, max_pages, seen_ids)
             new = [l for l in fetched if l.id not in seen_ids]
@@ -125,7 +132,7 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
 
         if not db.list_searches(active_only=True):
             log.warning("no active searches")
-            return "No active searches. Use /add."
+            return "Активных поисков нет. Создай через /add."
 
         pending = collect_alerts(db, brands, seed, max_pages)
         db.set_meta("last_run", now())
@@ -133,7 +140,7 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
         if seed:
             total = len(db.known_ids())
             log.info("seed mode: %d listings stored, no notifications sent", total)
-            return f"Seeded {total} listings, no messages sent."
+            return f"Засеял базу: {total} объявлений, ничего не отправлял."
 
         notifier = Notifier(dry_run=dry_run, max_per_run=MAX_PER_RUN)
         sent, deferred = notifier.send_batch(pending)
@@ -146,7 +153,7 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
                            alert.old_price, alert.chat_id, alert.search_id)
         db.commit()
         log.info("notified %d | queued for next run %d", len(sent), len(deferred))
-        return f"Sent {len(sent)} alerts, {len(deferred)} queued for the next run."
+        return f"Отправил {len(sent)}, ещё {len(deferred)} в очереди на следующий прогон."
     finally:
         if owns_db:
             db.commit()
@@ -182,6 +189,7 @@ def drain_bot_updates(db: Db) -> None:
 
 
 def main():
+    load_env()
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     ap = argparse.ArgumentParser()

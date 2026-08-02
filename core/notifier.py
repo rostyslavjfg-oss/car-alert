@@ -16,8 +16,10 @@ log = logging.getLogger(__name__)
 MAX_PER_RUN = 20
 SEND_DELAY = 1.2          # stay under Telegram's per-chat flood limits
 
-FUEL_LABEL = {"diesel": "Diesel", "petrol": "Petrol", "hybrid": "Hybrid", "electric": "Electric"}
-GEARBOX_LABEL = {"manual": "Manual", "automatic": "Automatic"}
+FUEL_LABEL = {"diesel": "дизель", "petrol": "бензин", "hybrid": "гибрид", "electric": "электро"}
+GEARBOX_LABEL = {"manual": "механика", "automatic": "автомат"}
+SOURCE_LABEL = {"mobilede": "mobile.de", "autoscout24": "autoscout24",
+                "bazos": "bazos.sk", "willhaben": "willhaben.at"}
 
 
 @dataclass
@@ -43,16 +45,18 @@ def build_caption(row: dict, old_price=None) -> str:
     head = " - ".join([
         f"{row.get('brand') or ''} {row.get('model') or ''}".strip() or "Car",
         str(row.get("year") or "?"),
-        _fmt(row.get("mileage_km"), " km"),
-        _fmt(row.get("price_eur"), " EUR"),
+        _fmt(row.get("mileage_km"), " км"),
+        _fmt(row.get("price_eur"), " €"),
     ])
     lines = [head]
     if old_price and row.get("price_eur"):
         drop = round((old_price - row["price_eur"]) / old_price * 100)
-        lines.insert(0, f"PRICE DROP -{drop}%: {_fmt(old_price, ' EUR')} -> {_fmt(row['price_eur'], ' EUR')}")
+        lines.insert(0, f"⬇️ ЦЕНА УПАЛА на {drop}%: "
+                        f"{_fmt(old_price, ' €')} → {_fmt(row['price_eur'], ' €')}")
+    source = row.get("source") or ""
     details = [FUEL_LABEL.get(row.get("fuel"), row.get("fuel") or "?"),
                GEARBOX_LABEL.get(row.get("gearbox"), row.get("gearbox") or "?"),
-               (row.get("source") or "").replace("mobilede", "mobile.de")]
+               SOURCE_LABEL.get(source, source)]
     if row.get("dealer_name"):
         details.append(str(row["dealer_name"])[:40])
     lines.append(" | ".join(str(d) for d in details))
@@ -69,7 +73,7 @@ class Notifier:
         self.max_per_run = max_per_run
         self.dry_run = dry_run or not self.token
         if self.dry_run:
-            log.warning("notifier: no TELEGRAM_BOT_TOKEN - running in dry-run mode")
+            log.warning("notifier: dry-run%s", "" if self.token else " (no TELEGRAM_BOT_TOKEN)")
 
     def send_batch(self, alerts: list) -> tuple:
         """Marks alerts as sent in place. Returns (sent, deferred)."""

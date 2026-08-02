@@ -16,11 +16,14 @@ log = logging.getLogger(__name__)
 
 BASE = "https://www.autoscout24.com/lst"
 FUEL_PARAM = {"diesel": "D", "petrol": "B", "electric": "E", "hybrid": "2"}
+# a code it does not know (e.g. SK) makes the whole search return zero results
+SUPPORTED_COUNTRIES = {"D", "A", "B", "NL", "L", "I", "E", "F"}
 GEARBOX_PARAM = {"automatic": "A", "manual": "M"}
 
 
 class AutoScout24Scraper(BaseScraper):
     source = "autoscout24"
+    countries_served = SUPPORTED_COUNTRIES
 
     def _url(self, profile: dict) -> str:
         brand = self.brands.get(profile["brand"])
@@ -34,7 +37,8 @@ class AutoScout24Scraper(BaseScraper):
     def _params(self, profile: dict, page: int) -> dict:
         p = {
             "atype": "C",
-            "cy": ",".join(profile.get("countries") or ["D"]),
+            "cy": ",".join(sorted(SUPPORTED_COUNTRIES.intersection(
+                {str(c).upper() for c in (profile.get("countries") or ["D"])}) or {"D"})),
             "sort": "age",       # newest offers first
             "desc": "1",
             "page": page,

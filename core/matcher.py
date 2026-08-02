@@ -5,17 +5,22 @@ server-side filters and for fields one of the sources ignores.
 """
 
 
-def _model_matches(listing_model: str, wanted: str) -> bool:
-    listing_model = (listing_model or "").lower()
+def _model_matches(listing, wanted: str) -> bool:
+    """Some sources only give a model group ("3er-Reihe") - fall back to the headline."""
     wanted = (wanted or "").lower().strip()
-    return not wanted or wanted in listing_model or listing_model in wanted
+    if not wanted:
+        return True
+    model = (listing.model or "").lower()
+    if wanted in model or (model and model in wanted):
+        return True
+    return wanted in (listing.title or "").lower()
 
 
 def matches(listing, profile: dict) -> bool:
     brand = (profile.get("brand") or "").lower()
     if brand and brand not in (listing.brand or "").lower():
         return False
-    if not _model_matches(listing.model, profile.get("model")):
+    if not _model_matches(listing, profile.get("model")):
         return False
 
     if profile.get("year_from") and listing.year and listing.year < profile["year_from"]:

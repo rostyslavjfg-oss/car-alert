@@ -17,7 +17,7 @@ import sys
 
 from telegram import BotCommand
 
-from core.db import Db
+from core.db import Db, load_env
 from core.telegram_app import BOT_COMMANDS, build_application
 from fetch_mobile_makes import load_brands
 from main import run as run_scrape
@@ -48,6 +48,7 @@ def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                         format="%(asctime)s %(levelname)s %(name)s %(message)s",
                         datefmt="%H:%M:%S")
+    load_env()
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         sys.exit("TELEGRAM_BOT_TOKEN is not set")

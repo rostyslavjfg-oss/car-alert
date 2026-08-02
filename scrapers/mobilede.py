@@ -74,8 +74,9 @@ class MobileDeScraper(BaseScraper):
         if profile.get("gearbox") in GEARBOX_PARAM:
             params.append(("tr", GEARBOX_PARAM[profile["gearbox"]]))
         for code in profile.get("countries") or ["D"]:
-            iso = COUNTRY_MAP.get(str(code).upper(), str(code).upper())
-            params.append(("cn", iso))
+            iso = COUNTRY_MAP.get(str(code).upper())
+            if iso:                    # unknown codes are dropped, not passed through
+                params.append(("cn", iso))
         return params
 
     @staticmethod
