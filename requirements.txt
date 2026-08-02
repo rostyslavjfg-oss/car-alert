@@ -1,0 +1,4 @@
+requests>=2.32
+beautifulsoup4>=4.12
+PyYAML>=6.0
+python-telegram-bot>=21.0

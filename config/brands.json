@@ -1,0 +1,1572 @@
+{
+  "9ff": {
+    "autoscout24_make_id": 51539,
+    "autoscout24_slug": "9ff",
+    "mobilede_make_id": null
+  },
+  "AC": {
+    "autoscout24_make_id": 14979,
+    "autoscout24_slug": "ac",
+    "mobilede_make_id": 203
+  },
+  "ACM": {
+    "autoscout24_make_id": 16429,
+    "autoscout24_slug": "acm",
+    "mobilede_make_id": null
+  },
+  "ARI": {
+    "autoscout24_make_id": 53196,
+    "autoscout24_slug": "ari",
+    "mobilede_make_id": null
+  },
+  "Abarth": {
+    "autoscout24_make_id": 16396,
+    "autoscout24_slug": "abarth",
+    "mobilede_make_id": 140
+  },
+  "Acura": {
+    "autoscout24_make_id": 16356,
+    "autoscout24_slug": "acura",
+    "mobilede_make_id": 375
+  },
+  "Aerfal": {
+    "autoscout24_make_id": 52055,
+    "autoscout24_slug": "aerfal",
+    "mobilede_make_id": null
+  },
+  "Aiways": {
+    "autoscout24_make_id": 51872,
+    "autoscout24_slug": "aiways",
+    "mobilede_make_id": 31930
+  },
+  "Aixam": {
+    "autoscout24_make_id": 16352,
+    "autoscout24_slug": "aixam",
+    "mobilede_make_id": 800
+  },
+  "Alba Mobility": {
+    "autoscout24_make_id": 51917,
+    "autoscout24_slug": "alba-mobility",
+    "mobilede_make_id": null
+  },
+  "Alfa Romeo": {
+    "autoscout24_make_id": 6,
+    "autoscout24_slug": "alfa-romeo",
+    "mobilede_make_id": 900
+  },
+  "Alpina": {
+    "autoscout24_make_id": 14,
+    "autoscout24_slug": "alpina",
+    "mobilede_make_id": 1100
+  },
+  "Alpine": {
+    "autoscout24_make_id": 51796,
+    "autoscout24_slug": "alpine",
+    "mobilede_make_id": 5
+  },
+  "Alvis": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "alvis",
+    "mobilede_make_id": 32315
+  },
+  "Amphicar": {
+    "autoscout24_make_id": 51545,
+    "autoscout24_slug": "amphicar",
+    "mobilede_make_id": null
+  },
+  "Andere": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "andere",
+    "mobilede_make_id": 1400
+  },
+  "Angelelli Automobili": {
+    "autoscout24_make_id": 51918,
+    "autoscout24_slug": "angelelli-automobili",
+    "mobilede_make_id": null
+  },
+  "Ariel": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "ariel",
+    "mobilede_make_id": 31876
+  },
+  "Ariel Motor": {
+    "autoscout24_make_id": 16419,
+    "autoscout24_slug": "ariel-motor",
+    "mobilede_make_id": null
+  },
+  "Artega": {
+    "autoscout24_make_id": 16427,
+    "autoscout24_slug": "artega",
+    "mobilede_make_id": 121
+  },
+  "Asia Motors": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "asia-motors",
+    "mobilede_make_id": 1750
+  },
+  "Aspark": {
+    "autoscout24_make_id": 51948,
+    "autoscout24_slug": "aspark",
+    "mobilede_make_id": null
+  },
+  "Aspid": {
+    "autoscout24_make_id": 16431,
+    "autoscout24_slug": "aspid",
+    "mobilede_make_id": null
+  },
+  "Aston Martin": {
+    "autoscout24_make_id": 8,
+    "autoscout24_slug": "aston-martin",
+    "mobilede_make_id": 1700
+  },
+  "Audi": {
+    "autoscout24_make_id": 9,
+    "autoscout24_slug": "audi",
+    "mobilede_make_id": 1900
+  },
+  "Aurus": {
+    "autoscout24_make_id": 51929,
+    "autoscout24_slug": "aurus",
+    "mobilede_make_id": null
+  },
+  "Austin": {
+    "autoscout24_make_id": 15643,
+    "autoscout24_slug": "austin",
+    "mobilede_make_id": 2000
+  },
+  "Austin-Healey": {
+    "autoscout24_make_id": 51901,
+    "autoscout24_slug": "austin-healey",
+    "mobilede_make_id": 1950
+  },
+  "Auto Union": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "auto-union",
+    "mobilede_make_id": 32323
+  },
+  "Autobianchi": {
+    "autoscout24_make_id": 15644,
+    "autoscout24_slug": "autobianchi",
+    "mobilede_make_id": null
+  },
+  "BAIC": {
+    "autoscout24_make_id": 51774,
+    "autoscout24_slug": "baic",
+    "mobilede_make_id": 31863
+  },
+  "BAW": {
+    "autoscout24_make_id": 52050,
+    "autoscout24_slug": "baw",
+    "mobilede_make_id": 32363
+  },
+  "BMW": {
+    "autoscout24_make_id": 13,
+    "autoscout24_slug": "bmw",
+    "mobilede_make_id": 3500
+  },
+  "BYD": {
+    "autoscout24_make_id": 16379,
+    "autoscout24_slug": "byd",
+    "mobilede_make_id": 31953
+  },
+  "Barkas": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "barkas",
+    "mobilede_make_id": 2600
+  },
+  "Bedford": {
+    "autoscout24_make_id": 16400,
+    "autoscout24_slug": "bedford",
+    "mobilede_make_id": null
+  },
+  "Bellier": {
+    "autoscout24_make_id": 16416,
+    "autoscout24_slug": "bellier",
+    "mobilede_make_id": null
+  },
+  "Bentley": {
+    "autoscout24_make_id": 11,
+    "autoscout24_slug": "bentley",
+    "mobilede_make_id": 3100
+  },
+  "Bertone": {
+    "autoscout24_make_id": 52045,
+    "autoscout24_slug": "bertone",
+    "mobilede_make_id": null
+  },
+  "Bestune": {
+    "autoscout24_make_id": 52007,
+    "autoscout24_slug": "bestune",
+    "mobilede_make_id": null
+  },
+  "Bizzarrini": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "bizzarrini",
+    "mobilede_make_id": 32316
+  },
+  "Boldmen": {
+    "autoscout24_make_id": 51900,
+    "autoscout24_slug": "boldmen",
+    "mobilede_make_id": null
+  },
+  "Bolloré": {
+    "autoscout24_make_id": 16418,
+    "autoscout24_slug": "bollore",
+    "mobilede_make_id": null
+  },
+  "Borgward": {
+    "autoscout24_make_id": 16424,
+    "autoscout24_slug": "borgward",
+    "mobilede_make_id": 3850
+  },
+  "Bovensiepen": {
+    "autoscout24_make_id": 53448,
+    "autoscout24_slug": "bovensiepen",
+    "mobilede_make_id": 32398
+  },
+  "Brilliance": {
+    "autoscout24_make_id": 16367,
+    "autoscout24_slug": "brilliance",
+    "mobilede_make_id": 4025
+  },
+  "Bristol": {
+    "autoscout24_make_id": 51895,
+    "autoscout24_slug": "bristol",
+    "mobilede_make_id": null
+  },
+  "Brute": {
+    "autoscout24_make_id": 51986,
+    "autoscout24_slug": "brute",
+    "mobilede_make_id": null
+  },
+  "Bugatti": {
+    "autoscout24_make_id": 15,
+    "autoscout24_slug": "bugatti",
+    "mobilede_make_id": 4350
+  },
+  "Buick": {
+    "autoscout24_make_id": 16,
+    "autoscout24_slug": "buick",
+    "mobilede_make_id": 4400
+  },
+  "CUPRA": {
+    "autoscout24_make_id": 51802,
+    "autoscout24_slug": "cupra",
+    "mobilede_make_id": 3
+  },
+  "Cadillac": {
+    "autoscout24_make_id": 17,
+    "autoscout24_slug": "cadillac",
+    "mobilede_make_id": 4700
+  },
+  "Caravans-Wohnm": {
+    "autoscout24_make_id": 15672,
+    "autoscout24_slug": "caravans-wohnm",
+    "mobilede_make_id": null
+  },
+  "Carver": {
+    "autoscout24_make_id": 51912,
+    "autoscout24_slug": "carver",
+    "mobilede_make_id": null
+  },
+  "Casalini": {
+    "autoscout24_make_id": 16407,
+    "autoscout24_slug": "casalini",
+    "mobilede_make_id": 112
+  },
+  "Caterham": {
+    "autoscout24_make_id": 16335,
+    "autoscout24_slug": "caterham",
+    "mobilede_make_id": 5300
+  },
+  "Cenntro": {
+    "autoscout24_make_id": 51936,
+    "autoscout24_slug": "cenntro",
+    "mobilede_make_id": 31944
+  },
+  "Chamonix": {
+    "autoscout24_make_id": 52064,
+    "autoscout24_slug": "chamonix",
+    "mobilede_make_id": null
+  },
+  "Changan": {
+    "autoscout24_make_id": 52058,
+    "autoscout24_slug": "changan",
+    "mobilede_make_id": 32359
+  },
+  "Changhe": {
+    "autoscout24_make_id": 16401,
+    "autoscout24_slug": "changhe",
+    "mobilede_make_id": null
+  },
+  "Chatenet": {
+    "autoscout24_make_id": 16357,
+    "autoscout24_slug": "chatenet",
+    "mobilede_make_id": 83
+  },
+  "Chery": {
+    "autoscout24_make_id": 16384,
+    "autoscout24_slug": "chery",
+    "mobilede_make_id": null
+  },
+  "Chevrolet": {
+    "autoscout24_make_id": 19,
+    "autoscout24_slug": "chevrolet",
+    "mobilede_make_id": 5600
+  },
+  "Chrysler": {
+    "autoscout24_make_id": 20,
+    "autoscout24_slug": "chrysler",
+    "mobilede_make_id": 5700
+  },
+  "Cirelli": {
+    "autoscout24_make_id": 51971,
+    "autoscout24_slug": "cirelli",
+    "mobilede_make_id": null
+  },
+  "Citroen": {
+    "autoscout24_make_id": 21,
+    "autoscout24_slug": "citroen",
+    "mobilede_make_id": 5900
+  },
+  "CityEL": {
+    "autoscout24_make_id": 16411,
+    "autoscout24_slug": "cityel",
+    "mobilede_make_id": null
+  },
+  "Cobra": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "cobra",
+    "mobilede_make_id": 6200
+  },
+  "Corvette": {
+    "autoscout24_make_id": 16380,
+    "autoscout24_slug": "corvette",
+    "mobilede_make_id": 6325
+  },
+  "DAF": {
+    "autoscout24_make_id": 16333,
+    "autoscout24_slug": "daf",
+    "mobilede_make_id": null
+  },
+  "DFM": {
+    "autoscout24_make_id": 53182,
+    "autoscout24_slug": "dfm",
+    "mobilede_make_id": 32395
+  },
+  "DFSK": {
+    "autoscout24_make_id": 51773,
+    "autoscout24_slug": "dfsk",
+    "mobilede_make_id": 31864
+  },
+  "DR Automobiles": {
+    "autoscout24_make_id": 16383,
+    "autoscout24_slug": "dr-automobiles",
+    "mobilede_make_id": null
+  },
+  "DS Automobiles": {
+    "autoscout24_make_id": 16415,
+    "autoscout24_slug": "ds-automobiles",
+    "mobilede_make_id": 235
+  },
+  "Dacia": {
+    "autoscout24_make_id": 16360,
+    "autoscout24_slug": "dacia",
+    "mobilede_make_id": 6600
+  },
+  "Daewoo": {
+    "autoscout24_make_id": 22,
+    "autoscout24_slug": "daewoo",
+    "mobilede_make_id": 6800
+  },
+  "Daihatsu": {
+    "autoscout24_make_id": 23,
+    "autoscout24_slug": "daihatsu",
+    "mobilede_make_id": 7000
+  },
+  "Daimler": {
+    "autoscout24_make_id": 16397,
+    "autoscout24_slug": "daimler",
+    "mobilede_make_id": null
+  },
+  "Dallara": {
+    "autoscout24_make_id": 51947,
+    "autoscout24_slug": "dallara",
+    "mobilede_make_id": 32357
+  },
+  "Dangel": {
+    "autoscout24_make_id": 16434,
+    "autoscout24_slug": "dangel",
+    "mobilede_make_id": null
+  },
+  "Datsun": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "datsun",
+    "mobilede_make_id": 30002
+  },
+  "De Tomaso": {
+    "autoscout24_make_id": 51779,
+    "autoscout24_slug": "de-tomaso",
+    "mobilede_make_id": 7400
+  },
+  "De la Chapelle": {
+    "autoscout24_make_id": 16423,
+    "autoscout24_slug": "de-la-chapelle",
+    "mobilede_make_id": null
+  },
+  "Delahaye": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "delahaye",
+    "mobilede_make_id": 32317
+  },
+  "Delorean": {
+    "autoscout24_make_id": 51859,
+    "autoscout24_slug": "delorean",
+    "mobilede_make_id": 32324
+  },
+  "Denza": {
+    "autoscout24_make_id": 52054,
+    "autoscout24_slug": "denza",
+    "mobilede_make_id": null
+  },
+  "Devalliet": {
+    "autoscout24_make_id": 53447,
+    "autoscout24_slug": "devalliet",
+    "mobilede_make_id": null
+  },
+  "Devinci Cars": {
+    "autoscout24_make_id": 51920,
+    "autoscout24_slug": "devinci-cars",
+    "mobilede_make_id": null
+  },
+  "Dodge": {
+    "autoscout24_make_id": 2152,
+    "autoscout24_slug": "dodge",
+    "mobilede_make_id": 7700
+  },
+  "Dongfeng": {
+    "autoscout24_make_id": 52016,
+    "autoscout24_slug": "dongfeng",
+    "mobilede_make_id": null
+  },
+  "Donkervoort": {
+    "autoscout24_make_id": 16339,
+    "autoscout24_slug": "donkervoort",
+    "mobilede_make_id": 255
+  },
+  "Dutton": {
+    "autoscout24_make_id": 51552,
+    "autoscout24_slug": "dutton",
+    "mobilede_make_id": null
+  },
+  "EMC": {
+    "autoscout24_make_id": 51924,
+    "autoscout24_slug": "emc",
+    "mobilede_make_id": null
+  },
+  "EVO": {
+    "autoscout24_make_id": 51831,
+    "autoscout24_slug": "evo",
+    "mobilede_make_id": null
+  },
+  "Ebro": {
+    "autoscout24_make_id": 52008,
+    "autoscout24_slug": "ebro",
+    "mobilede_make_id": null
+  },
+  "Econelo": {
+    "autoscout24_make_id": 51835,
+    "autoscout24_slug": "econelo",
+    "mobilede_make_id": null
+  },
+  "Edran": {
+    "autoscout24_make_id": 51905,
+    "autoscout24_slug": "edran",
+    "mobilede_make_id": null
+  },
+  "Elaris": {
+    "autoscout24_make_id": 51880,
+    "autoscout24_slug": "elaris",
+    "mobilede_make_id": 31932
+  },
+  "Embuggy": {
+    "autoscout24_make_id": 51874,
+    "autoscout24_slug": "embuggy",
+    "mobilede_make_id": null
+  },
+  "Estrima": {
+    "autoscout24_make_id": 16436,
+    "autoscout24_slug": "estrima",
+    "mobilede_make_id": 32142
+  },
+  "Evetta": {
+    "autoscout24_make_id": 51919,
+    "autoscout24_slug": "evetta",
+    "mobilede_make_id": null
+  },
+  "Facel Vega": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "facel-vega",
+    "mobilede_make_id": 32318
+  },
+  "Farizon": {
+    "autoscout24_make_id": 52033,
+    "autoscout24_slug": "farizon",
+    "mobilede_make_id": null
+  },
+  "Ferrari": {
+    "autoscout24_make_id": 27,
+    "autoscout24_slug": "ferrari",
+    "mobilede_make_id": 8600
+  },
+  "Fiat": {
+    "autoscout24_make_id": 28,
+    "autoscout24_slug": "fiat",
+    "mobilede_make_id": 8800
+  },
+  "Fisker": {
+    "autoscout24_make_id": 51543,
+    "autoscout24_slug": "fisker",
+    "mobilede_make_id": 172
+  },
+  "Ford": {
+    "autoscout24_make_id": 29,
+    "autoscout24_slug": "ford",
+    "mobilede_make_id": 9000
+  },
+  "Forthing": {
+    "autoscout24_make_id": 51987,
+    "autoscout24_slug": "forthing",
+    "mobilede_make_id": null
+  },
+  "Foton": {
+    "autoscout24_make_id": 51973,
+    "autoscout24_slug": "foton",
+    "mobilede_make_id": 117
+  },
+  "GAZ": {
+    "autoscout24_make_id": 16386,
+    "autoscout24_slug": "gaz",
+    "mobilede_make_id": null
+  },
+  "GEM": {
+    "autoscout24_make_id": 16403,
+    "autoscout24_slug": "gem",
+    "mobilede_make_id": null
+  },
+  "GEMBALLA": {
+    "autoscout24_make_id": 51540,
+    "autoscout24_slug": "gemballa",
+    "mobilede_make_id": 204
+  },
+  "GMC": {
+    "autoscout24_make_id": 2153,
+    "autoscout24_slug": "gmc",
+    "mobilede_make_id": 9900
+  },
+  "GTA": {
+    "autoscout24_make_id": 51926,
+    "autoscout24_slug": "gta",
+    "mobilede_make_id": null
+  },
+  "GWM": {
+    "autoscout24_make_id": 51981,
+    "autoscout24_slug": "gwm",
+    "mobilede_make_id": 30006
+  },
+  "Gac Gonow": {
+    "autoscout24_make_id": 51542,
+    "autoscout24_slug": "gac-gonow",
+    "mobilede_make_id": 205
+  },
+  "Galloper": {
+    "autoscout24_make_id": 16337,
+    "autoscout24_slug": "galloper",
+    "mobilede_make_id": null
+  },
+  "Gappy": {
+    "autoscout24_make_id": 51907,
+    "autoscout24_slug": "gappy",
+    "mobilede_make_id": null
+  },
+  "Geely": {
+    "autoscout24_make_id": 52060,
+    "autoscout24_slug": "geely",
+    "mobilede_make_id": 30005
+  },
+  "Genesis": {
+    "autoscout24_make_id": 51885,
+    "autoscout24_slug": "genesis",
+    "mobilede_make_id": 270
+  },
+  "Giana": {
+    "autoscout24_make_id": 51837,
+    "autoscout24_slug": "giana",
+    "mobilede_make_id": null
+  },
+  "Gillet": {
+    "autoscout24_make_id": 51791,
+    "autoscout24_slug": "gillet",
+    "mobilede_make_id": null
+  },
+  "Giotti Victoria": {
+    "autoscout24_make_id": 16421,
+    "autoscout24_slug": "giotti-victoria",
+    "mobilede_make_id": null
+  },
+  "Goupil": {
+    "autoscout24_make_id": 51813,
+    "autoscout24_slug": "goupil",
+    "mobilede_make_id": null
+  },
+  "Great Wall": {
+    "autoscout24_make_id": 16382,
+    "autoscout24_slug": "great-wall",
+    "mobilede_make_id": null
+  },
+  "Grecav": {
+    "autoscout24_make_id": 16409,
+    "autoscout24_slug": "grecav",
+    "mobilede_make_id": 122
+  },
+  "HUMMER": {
+    "autoscout24_make_id": 15674,
+    "autoscout24_slug": "hummer",
+    "mobilede_make_id": 11050
+  },
+  "Haima": {
+    "autoscout24_make_id": 51512,
+    "autoscout24_slug": "haima",
+    "mobilede_make_id": null
+  },
+  "Hamann": {
+    "autoscout24_make_id": 51534,
+    "autoscout24_slug": "hamann",
+    "mobilede_make_id": 186
+  },
+  "Haval": {
+    "autoscout24_make_id": 51816,
+    "autoscout24_slug": "haval",
+    "mobilede_make_id": null
+  },
+  "Heinkel": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "heinkel",
+    "mobilede_make_id": 32141
+  },
+  "Hiphi": {
+    "autoscout24_make_id": 51977,
+    "autoscout24_slug": "hiphi",
+    "mobilede_make_id": null
+  },
+  "Holden": {
+    "autoscout24_make_id": 51881,
+    "autoscout24_slug": "holden",
+    "mobilede_make_id": 10850
+  },
+  "Honda": {
+    "autoscout24_make_id": 31,
+    "autoscout24_slug": "honda",
+    "mobilede_make_id": 11000
+  },
+  "Hongqi": {
+    "autoscout24_make_id": 51988,
+    "autoscout24_slug": "hongqi",
+    "mobilede_make_id": 32228
+  },
+  "Horch": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "horch",
+    "mobilede_make_id": 32319
+  },
+  "Hurtan": {
+    "autoscout24_make_id": 51767,
+    "autoscout24_slug": "hurtan",
+    "mobilede_make_id": null
+  },
+  "Hyundai": {
+    "autoscout24_make_id": 33,
+    "autoscout24_slug": "hyundai",
+    "mobilede_make_id": 11600
+  },
+  "ICH-X": {
+    "autoscout24_make_id": 51992,
+    "autoscout24_slug": "ich-x",
+    "mobilede_make_id": null
+  },
+  "IZH": {
+    "autoscout24_make_id": 16387,
+    "autoscout24_slug": "izh",
+    "mobilede_make_id": null
+  },
+  "Ineos": {
+    "autoscout24_make_id": 51925,
+    "autoscout24_slug": "ineos",
+    "mobilede_make_id": 32033
+  },
+  "Infiniti": {
+    "autoscout24_make_id": 16355,
+    "autoscout24_slug": "infiniti",
+    "mobilede_make_id": 11650
+  },
+  "Innocenti": {
+    "autoscout24_make_id": 15629,
+    "autoscout24_slug": "innocenti",
+    "mobilede_make_id": null
+  },
+  "Invicta": {
+    "autoscout24_make_id": 52006,
+    "autoscout24_slug": "invicta",
+    "mobilede_make_id": 32320
+  },
+  "Iso Rivolta": {
+    "autoscout24_make_id": 16402,
+    "autoscout24_slug": "iso-rivolta",
+    "mobilede_make_id": null
+  },
+  "Isuzu": {
+    "autoscout24_make_id": 35,
+    "autoscout24_slug": "isuzu",
+    "mobilede_make_id": 11900
+  },
+  "Iveco": {
+    "autoscout24_make_id": 14882,
+    "autoscout24_slug": "iveco",
+    "mobilede_make_id": 12100
+  },
+  "JAC": {
+    "autoscout24_make_id": 51849,
+    "autoscout24_slug": "jac",
+    "mobilede_make_id": 30708
+  },
+  "Jaecoo": {
+    "autoscout24_make_id": 51999,
+    "autoscout24_slug": "jaecoo",
+    "mobilede_make_id": 32381
+  },
+  "Jaguar": {
+    "autoscout24_make_id": 37,
+    "autoscout24_slug": "jaguar",
+    "mobilede_make_id": 12400
+  },
+  "Jeep": {
+    "autoscout24_make_id": 38,
+    "autoscout24_slug": "jeep",
+    "mobilede_make_id": 12600
+  },
+  "Jensen": {
+    "autoscout24_make_id": 51910,
+    "autoscout24_slug": "jensen",
+    "mobilede_make_id": null
+  },
+  "Jetour": {
+    "autoscout24_make_id": 53446,
+    "autoscout24_slug": "jetour",
+    "mobilede_make_id": 32394
+  },
+  "Jiayuan": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "jiayuan",
+    "mobilede_make_id": 32305
+  },
+  "KGM": {
+    "autoscout24_make_id": 51975,
+    "autoscout24_slug": "kgm",
+    "mobilede_make_id": 32332
+  },
+  "KTM": {
+    "autoscout24_make_id": 50060,
+    "autoscout24_slug": "ktm",
+    "mobilede_make_id": 13900
+  },
+  "Karma": {
+    "autoscout24_make_id": 51875,
+    "autoscout24_slug": "karma",
+    "mobilede_make_id": null
+  },
+  "Kia": {
+    "autoscout24_make_id": 39,
+    "autoscout24_slug": "kia",
+    "mobilede_make_id": 13200
+  },
+  "Koenigsegg": {
+    "autoscout24_make_id": 51781,
+    "autoscout24_slug": "koenigsegg",
+    "mobilede_make_id": 13450
+  },
+  "LDV": {
+    "autoscout24_make_id": 16426,
+    "autoscout24_slug": "ldv",
+    "mobilede_make_id": null
+  },
+  "LEVC": {
+    "autoscout24_make_id": 51854,
+    "autoscout24_slug": "levc",
+    "mobilede_make_id": 31933
+  },
+  "Lada": {
+    "autoscout24_make_id": 40,
+    "autoscout24_slug": "lada",
+    "mobilede_make_id": 14400
+  },
+  "Lamborghini": {
+    "autoscout24_make_id": 41,
+    "autoscout24_slug": "lamborghini",
+    "mobilede_make_id": 14600
+  },
+  "Lancia": {
+    "autoscout24_make_id": 42,
+    "autoscout24_slug": "lancia",
+    "mobilede_make_id": 14700
+  },
+  "Land Rover": {
+    "autoscout24_make_id": 15641,
+    "autoscout24_slug": "land-rover",
+    "mobilede_make_id": 14800
+  },
+  "Landwind": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "landwind",
+    "mobilede_make_id": 14845
+  },
+  "Leapmotor": {
+    "autoscout24_make_id": 52000,
+    "autoscout24_slug": "leapmotor",
+    "mobilede_make_id": 32303
+  },
+  "Lee Group": {
+    "autoscout24_make_id": 52061,
+    "autoscout24_slug": "lee-group",
+    "mobilede_make_id": null
+  },
+  "Lexus": {
+    "autoscout24_make_id": 43,
+    "autoscout24_slug": "lexus",
+    "mobilede_make_id": 15200
+  },
+  "Li": {
+    "autoscout24_make_id": 52046,
+    "autoscout24_slug": "li",
+    "mobilede_make_id": null
+  },
+  "Lifan": {
+    "autoscout24_make_id": 16393,
+    "autoscout24_slug": "lifan",
+    "mobilede_make_id": null
+  },
+  "Ligier": {
+    "autoscout24_make_id": 16353,
+    "autoscout24_slug": "ligier",
+    "mobilede_make_id": 15400
+  },
+  "Lincoln": {
+    "autoscout24_make_id": 14890,
+    "autoscout24_slug": "lincoln",
+    "mobilede_make_id": 15500
+  },
+  "Linktour": {
+    "autoscout24_make_id": 53439,
+    "autoscout24_slug": "linktour",
+    "mobilede_make_id": null
+  },
+  "Linzda": {
+    "autoscout24_make_id": 51883,
+    "autoscout24_slug": "linzda",
+    "mobilede_make_id": null
+  },
+  "Livan": {
+    "autoscout24_make_id": 52003,
+    "autoscout24_slug": "livan",
+    "mobilede_make_id": null
+  },
+  "Lorinser": {
+    "autoscout24_make_id": 51908,
+    "autoscout24_slug": "lorinser",
+    "mobilede_make_id": null
+  },
+  "Lotus": {
+    "autoscout24_make_id": 44,
+    "autoscout24_slug": "lotus",
+    "mobilede_make_id": 15900
+  },
+  "Lucid": {
+    "autoscout24_make_id": 51921,
+    "autoscout24_slug": "lucid",
+    "mobilede_make_id": 32172
+  },
+  "Lynk & Co": {
+    "autoscout24_make_id": 51914,
+    "autoscout24_slug": "lynk-and-co",
+    "mobilede_make_id": 31934
+  },
+  "MAN": {
+    "autoscout24_make_id": 51780,
+    "autoscout24_slug": "man",
+    "mobilede_make_id": 16500
+  },
+  "MG": {
+    "autoscout24_make_id": 48,
+    "autoscout24_slug": "mg",
+    "mobilede_make_id": 17300
+  },
+  "MHERO": {
+    "autoscout24_make_id": 53441,
+    "autoscout24_slug": "mhero",
+    "mobilede_make_id": null
+  },
+  "MINI": {
+    "autoscout24_make_id": 16338,
+    "autoscout24_slug": "mini",
+    "mobilede_make_id": 17500
+  },
+  "MP Lafer": {
+    "autoscout24_make_id": 51554,
+    "autoscout24_slug": "mp-lafer",
+    "mobilede_make_id": null
+  },
+  "MPM Motors": {
+    "autoscout24_make_id": 51788,
+    "autoscout24_slug": "mpm-motors",
+    "mobilede_make_id": null
+  },
+  "Mahindra": {
+    "autoscout24_make_id": 16359,
+    "autoscout24_slug": "mahindra",
+    "mobilede_make_id": 16200
+  },
+  "Mansory": {
+    "autoscout24_make_id": 16435,
+    "autoscout24_slug": "mansory",
+    "mobilede_make_id": null
+  },
+  "Martin": {
+    "autoscout24_make_id": 51906,
+    "autoscout24_slug": "martin",
+    "mobilede_make_id": null
+  },
+  "Martin Motors": {
+    "autoscout24_make_id": 16410,
+    "autoscout24_slug": "martin-motors",
+    "mobilede_make_id": null
+  },
+  "Maserati": {
+    "autoscout24_make_id": 45,
+    "autoscout24_slug": "maserati",
+    "mobilede_make_id": 16600
+  },
+  "Matra": {
+    "autoscout24_make_id": 51955,
+    "autoscout24_slug": "matra",
+    "mobilede_make_id": null
+  },
+  "Maxus": {
+    "autoscout24_make_id": 51803,
+    "autoscout24_slug": "maxus",
+    "mobilede_make_id": 31896
+  },
+  "Maybach": {
+    "autoscout24_make_id": 16348,
+    "autoscout24_slug": "maybach",
+    "mobilede_make_id": 16700
+  },
+  "Mazda": {
+    "autoscout24_make_id": 46,
+    "autoscout24_slug": "mazda",
+    "mobilede_make_id": 16800
+  },
+  "McLaren": {
+    "autoscout24_make_id": 51519,
+    "autoscout24_slug": "mclaren",
+    "mobilede_make_id": 137
+  },
+  "Mega": {
+    "autoscout24_make_id": 51902,
+    "autoscout24_slug": "mega",
+    "mobilede_make_id": null
+  },
+  "Melex": {
+    "autoscout24_make_id": 16399,
+    "autoscout24_slug": "melex",
+    "mobilede_make_id": null
+  },
+  "Mercedes-Benz": {
+    "autoscout24_make_id": 47,
+    "autoscout24_slug": "mercedes-benz",
+    "mobilede_make_id": 17200
+  },
+  "Mercury": {
+    "autoscout24_make_id": 51834,
+    "autoscout24_slug": "mercury",
+    "mobilede_make_id": null
+  },
+  "Messerschmitt": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "messerschmitt",
+    "mobilede_make_id": 32321
+  },
+  "Micro": {
+    "autoscout24_make_id": 51965,
+    "autoscout24_slug": "micro",
+    "mobilede_make_id": null
+  },
+  "Microcar": {
+    "autoscout24_make_id": 16361,
+    "autoscout24_slug": "microcar",
+    "mobilede_make_id": 30011
+  },
+  "Microlino": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "microlino",
+    "mobilede_make_id": 32044
+  },
+  "Militem": {
+    "autoscout24_make_id": 51897,
+    "autoscout24_slug": "militem",
+    "mobilede_make_id": null
+  },
+  "Minari": {
+    "autoscout24_make_id": 51903,
+    "autoscout24_slug": "minari",
+    "mobilede_make_id": null
+  },
+  "Minauto": {
+    "autoscout24_make_id": 51766,
+    "autoscout24_slug": "minauto",
+    "mobilede_make_id": null
+  },
+  "Mitsubishi": {
+    "autoscout24_make_id": 50,
+    "autoscout24_slug": "mitsubishi",
+    "mobilede_make_id": 17700
+  },
+  "Mitsuoka": {
+    "autoscout24_make_id": 51782,
+    "autoscout24_slug": "mitsuoka",
+    "mobilede_make_id": null
+  },
+  "Mobilize": {
+    "autoscout24_make_id": 52004,
+    "autoscout24_slug": "mobilize",
+    "mobilede_make_id": null
+  },
+  "Morgan": {
+    "autoscout24_make_id": 51,
+    "autoscout24_slug": "morgan",
+    "mobilede_make_id": 17900
+  },
+  "Moskvich": {
+    "autoscout24_make_id": 16388,
+    "autoscout24_slug": "moskvich",
+    "mobilede_make_id": null
+  },
+  "NIO": {
+    "autoscout24_make_id": 51928,
+    "autoscout24_slug": "nio",
+    "mobilede_make_id": 31954
+  },
+  "NSU": {
+    "autoscout24_make_id": 50111,
+    "autoscout24_slug": "nsu",
+    "mobilede_make_id": 18875
+  },
+  "Nissan": {
+    "autoscout24_make_id": 52,
+    "autoscout24_slug": "nissan",
+    "mobilede_make_id": 18700
+  },
+  "Oldsmobile": {
+    "autoscout24_make_id": 53,
+    "autoscout24_slug": "oldsmobile",
+    "mobilede_make_id": 18975
+  },
+  "Oldtimer": {
+    "autoscout24_make_id": 15670,
+    "autoscout24_slug": "oldtimer",
+    "mobilede_make_id": null
+  },
+  "Omoda": {
+    "autoscout24_make_id": 51991,
+    "autoscout24_slug": "omoda",
+    "mobilede_make_id": 32380
+  },
+  "Opel": {
+    "autoscout24_make_id": 54,
+    "autoscout24_slug": "opel",
+    "mobilede_make_id": 19000
+  },
+  "Ora": {
+    "autoscout24_make_id": 51934,
+    "autoscout24_slug": "ora",
+    "mobilede_make_id": 31955
+  },
+  "Others": {
+    "autoscout24_make_id": 16328,
+    "autoscout24_slug": "others",
+    "mobilede_make_id": null
+  },
+  "PGO": {
+    "autoscout24_make_id": 50083,
+    "autoscout24_slug": "pgo",
+    "mobilede_make_id": null
+  },
+  "Packard": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "packard",
+    "mobilede_make_id": 32021
+  },
+  "Pagani": {
+    "autoscout24_make_id": 16341,
+    "autoscout24_slug": "pagani",
+    "mobilede_make_id": 149
+  },
+  "Panther Westwinds": {
+    "autoscout24_make_id": 51553,
+    "autoscout24_slug": "panther-westwinds",
+    "mobilede_make_id": null
+  },
+  "Peugeot": {
+    "autoscout24_make_id": 55,
+    "autoscout24_slug": "peugeot",
+    "mobilede_make_id": 19300
+  },
+  "Piaggio": {
+    "autoscout24_make_id": 16350,
+    "autoscout24_slug": "piaggio",
+    "mobilede_make_id": 19600
+  },
+  "Plymouth": {
+    "autoscout24_make_id": 51770,
+    "autoscout24_slug": "plymouth",
+    "mobilede_make_id": 19800
+  },
+  "Polestar": {
+    "autoscout24_make_id": 51817,
+    "autoscout24_slug": "polestar",
+    "mobilede_make_id": 4
+  },
+  "Pontiac": {
+    "autoscout24_make_id": 56,
+    "autoscout24_slug": "pontiac",
+    "mobilede_make_id": 20000
+  },
+  "Porsche": {
+    "autoscout24_make_id": 57,
+    "autoscout24_slug": "porsche",
+    "mobilede_make_id": 20100
+  },
+  "Proton": {
+    "autoscout24_make_id": 15636,
+    "autoscout24_slug": "proton",
+    "mobilede_make_id": 20200
+  },
+  "Puch": {
+    "autoscout24_make_id": 15646,
+    "autoscout24_slug": "puch",
+    "mobilede_make_id": null
+  },
+  "RAM": {
+    "autoscout24_make_id": 51793,
+    "autoscout24_slug": "ram",
+    "mobilede_make_id": null
+  },
+  "Regis": {
+    "autoscout24_make_id": 51812,
+    "autoscout24_slug": "regis",
+    "mobilede_make_id": null
+  },
+  "Reliant": {
+    "autoscout24_make_id": 16398,
+    "autoscout24_slug": "reliant",
+    "mobilede_make_id": null
+  },
+  "Renault": {
+    "autoscout24_make_id": 60,
+    "autoscout24_slug": "renault",
+    "mobilede_make_id": 20700
+  },
+  "Riley": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "riley",
+    "mobilede_make_id": 32322
+  },
+  "Rimac": {
+    "autoscout24_make_id": 53191,
+    "autoscout24_slug": "rimac",
+    "mobilede_make_id": 32368
+  },
+  "Rivian": {
+    "autoscout24_make_id": 52013,
+    "autoscout24_slug": "rivian",
+    "mobilede_make_id": null
+  },
+  "Rolls-Royce": {
+    "autoscout24_make_id": 61,
+    "autoscout24_slug": "rolls-royce",
+    "mobilede_make_id": 21600
+  },
+  "Rover": {
+    "autoscout24_make_id": 62,
+    "autoscout24_slug": "rover",
+    "mobilede_make_id": 21700
+  },
+  "Ruf": {
+    "autoscout24_make_id": 51536,
+    "autoscout24_slug": "ruf",
+    "mobilede_make_id": 125
+  },
+  "SEAT": {
+    "autoscout24_make_id": 64,
+    "autoscout24_slug": "seat",
+    "mobilede_make_id": 22500
+  },
+  "SGS": {
+    "autoscout24_make_id": 51913,
+    "autoscout24_slug": "sgs",
+    "mobilede_make_id": null
+  },
+  "SWM": {
+    "autoscout24_make_id": 51749,
+    "autoscout24_slug": "swm",
+    "mobilede_make_id": 247
+  },
+  "Saab": {
+    "autoscout24_make_id": 63,
+    "autoscout24_slug": "saab",
+    "mobilede_make_id": 21800
+  },
+  "Santana": {
+    "autoscout24_make_id": 16369,
+    "autoscout24_slug": "santana",
+    "mobilede_make_id": 22000
+  },
+  "Segway": {
+    "autoscout24_make_id": 51866,
+    "autoscout24_slug": "segway",
+    "mobilede_make_id": null
+  },
+  "Selvo": {
+    "autoscout24_make_id": 51839,
+    "autoscout24_slug": "selvo",
+    "mobilede_make_id": null
+  },
+  "Seres": {
+    "autoscout24_make_id": 51861,
+    "autoscout24_slug": "seres",
+    "mobilede_make_id": 32144
+  },
+  "Sevic": {
+    "autoscout24_make_id": 51827,
+    "autoscout24_slug": "sevic",
+    "mobilede_make_id": null
+  },
+  "Shelby": {
+    "autoscout24_make_id": 51896,
+    "autoscout24_slug": "shelby",
+    "mobilede_make_id": null
+  },
+  "Shuanghuan": {
+    "autoscout24_make_id": 51800,
+    "autoscout24_slug": "shuanghuan",
+    "mobilede_make_id": null
+  },
+  "Silence": {
+    "autoscout24_make_id": 51853,
+    "autoscout24_slug": "silence",
+    "mobilede_make_id": 31920
+  },
+  "Simca": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "simca",
+    "mobilede_make_id": 293
+  },
+  "Simplici": {
+    "autoscout24_make_id": 52039,
+    "autoscout24_slug": "simplici",
+    "mobilede_make_id": null
+  },
+  "Singer": {
+    "autoscout24_make_id": 51909,
+    "autoscout24_slug": "singer",
+    "mobilede_make_id": null
+  },
+  "Skoda": {
+    "autoscout24_make_id": 65,
+    "autoscout24_slug": "skoda",
+    "mobilede_make_id": 22900
+  },
+  "Skywell": {
+    "autoscout24_make_id": 51959,
+    "autoscout24_slug": "skywell",
+    "mobilede_make_id": null
+  },
+  "SpeedArt": {
+    "autoscout24_make_id": 51538,
+    "autoscout24_slug": "speedart",
+    "mobilede_make_id": 188
+  },
+  "Sportequipe": {
+    "autoscout24_make_id": 51949,
+    "autoscout24_slug": "sportequipe",
+    "mobilede_make_id": null
+  },
+  "Spyker": {
+    "autoscout24_make_id": 16377,
+    "autoscout24_slug": "spyker",
+    "mobilede_make_id": 100
+  },
+  "SsangYong": {
+    "autoscout24_make_id": 66,
+    "autoscout24_slug": "ssangyong",
+    "mobilede_make_id": 23100
+  },
+  "Stormborn": {
+    "autoscout24_make_id": 51974,
+    "autoscout24_slug": "stormborn",
+    "mobilede_make_id": null
+  },
+  "StreetScooter": {
+    "autoscout24_make_id": 51795,
+    "autoscout24_slug": "streetscooter",
+    "mobilede_make_id": null
+  },
+  "Studebaker": {
+    "autoscout24_make_id": 51833,
+    "autoscout24_slug": "studebaker",
+    "mobilede_make_id": 296
+  },
+  "Subaru": {
+    "autoscout24_make_id": 67,
+    "autoscout24_slug": "subaru",
+    "mobilede_make_id": 23500
+  },
+  "Suzuki": {
+    "autoscout24_make_id": 68,
+    "autoscout24_slug": "suzuki",
+    "mobilede_make_id": 23600
+  },
+  "TECHART": {
+    "autoscout24_make_id": 51535,
+    "autoscout24_slug": "techart",
+    "mobilede_make_id": 189
+  },
+  "TVR": {
+    "autoscout24_make_id": 71,
+    "autoscout24_slug": "tvr",
+    "mobilede_make_id": 24500
+  },
+  "TYN-e": {
+    "autoscout24_make_id": 53192,
+    "autoscout24_slug": "tyn-e",
+    "mobilede_make_id": 32336
+  },
+  "Talbot": {
+    "autoscout24_make_id": 51551,
+    "autoscout24_slug": "talbot",
+    "mobilede_make_id": 23800
+  },
+  "Tasso": {
+    "autoscout24_make_id": 16404,
+    "autoscout24_slug": "tasso",
+    "mobilede_make_id": null
+  },
+  "Tata": {
+    "autoscout24_make_id": 16327,
+    "autoscout24_slug": "tata",
+    "mobilede_make_id": 23825
+  },
+  "Tazzari EV": {
+    "autoscout24_make_id": 51557,
+    "autoscout24_slug": "tazzari-ev",
+    "mobilede_make_id": null
+  },
+  "Tesla": {
+    "autoscout24_make_id": 51520,
+    "autoscout24_slug": "tesla",
+    "mobilede_make_id": 135
+  },
+  "Tiger": {
+    "autoscout24_make_id": 52038,
+    "autoscout24_slug": "tiger",
+    "mobilede_make_id": null
+  },
+  "Togg": {
+    "autoscout24_make_id": 51950,
+    "autoscout24_slug": "togg",
+    "mobilede_make_id": 32369
+  },
+  "Town Life": {
+    "autoscout24_make_id": 16420,
+    "autoscout24_slug": "town-life",
+    "mobilede_make_id": null
+  },
+  "Toyota": {
+    "autoscout24_make_id": 70,
+    "autoscout24_slug": "toyota",
+    "mobilede_make_id": 24100
+  },
+  "Trabant": {
+    "autoscout24_make_id": 15633,
+    "autoscout24_slug": "trabant",
+    "mobilede_make_id": 24200
+  },
+  "Trailer-Anhänger": {
+    "autoscout24_make_id": 16326,
+    "autoscout24_slug": "trailer-anhanger",
+    "mobilede_make_id": null
+  },
+  "Triumph": {
+    "autoscout24_make_id": 2120,
+    "autoscout24_slug": "triumph",
+    "mobilede_make_id": 24400
+  },
+  "Trucks-Lkw": {
+    "autoscout24_make_id": 16253,
+    "autoscout24_slug": "trucks-lkw",
+    "mobilede_make_id": null
+  },
+  "UAZ": {
+    "autoscout24_make_id": 16389,
+    "autoscout24_slug": "uaz",
+    "mobilede_make_id": null
+  },
+  "VAZ": {
+    "autoscout24_make_id": 16385,
+    "autoscout24_slug": "vaz",
+    "mobilede_make_id": null
+  },
+  "VEM": {
+    "autoscout24_make_id": 16422,
+    "autoscout24_slug": "vem",
+    "mobilede_make_id": null
+  },
+  "Vanden Plas": {
+    "autoscout24_make_id": 51836,
+    "autoscout24_slug": "vanden-plas",
+    "mobilede_make_id": null
+  },
+  "Vanderhall": {
+    "autoscout24_make_id": 51809,
+    "autoscout24_slug": "vanderhall",
+    "mobilede_make_id": null
+  },
+  "Venucia": {
+    "autoscout24_make_id": 53440,
+    "autoscout24_slug": "venucia",
+    "mobilede_make_id": null
+  },
+  "VinFast": {
+    "autoscout24_make_id": 51915,
+    "autoscout24_slug": "vinfast",
+    "mobilede_make_id": 32207
+  },
+  "Vincent": {
+    "autoscout24_make_id": null,
+    "autoscout24_slug": "vincent",
+    "mobilede_make_id": 31389
+  },
+  "Volkswagen": {
+    "autoscout24_make_id": 74,
+    "autoscout24_slug": "volkswagen",
+    "mobilede_make_id": 25200
+  },
+  "Volvo": {
+    "autoscout24_make_id": 73,
+    "autoscout24_slug": "volvo",
+    "mobilede_make_id": 25100
+  },
+  "Voyah": {
+    "autoscout24_make_id": 51993,
+    "autoscout24_slug": "voyah",
+    "mobilede_make_id": 32375
+  },
+  "Wartburg": {
+    "autoscout24_make_id": 16336,
+    "autoscout24_slug": "wartburg",
+    "mobilede_make_id": 25300
+  },
+  "Weltmeister": {
+    "autoscout24_make_id": 51873,
+    "autoscout24_slug": "weltmeister",
+    "mobilede_make_id": null
+  },
+  "Wenckstern": {
+    "autoscout24_make_id": 51852,
+    "autoscout24_slug": "wenckstern",
+    "mobilede_make_id": null
+  },
+  "Westfield": {
+    "autoscout24_make_id": 51513,
+    "autoscout24_slug": "westfield",
+    "mobilede_make_id": 113
+  },
+  "Wey": {
+    "autoscout24_make_id": 51935,
+    "autoscout24_slug": "wey",
+    "mobilede_make_id": 31956
+  },
+  "Wiesmann": {
+    "autoscout24_make_id": 16351,
+    "autoscout24_slug": "wiesmann",
+    "mobilede_make_id": 25650
+  },
+  "XBus": {
+    "autoscout24_make_id": 51869,
+    "autoscout24_slug": "xbus",
+    "mobilede_make_id": null
+  },
+  "XEV": {
+    "autoscout24_make_id": 51860,
+    "autoscout24_slug": "xev",
+    "mobilede_make_id": 32034
+  },
+  "Xiaomi": {
+    "autoscout24_make_id": 52031,
+    "autoscout24_slug": "xiaomi",
+    "mobilede_make_id": null
+  },
+  "Xpeng": {
+    "autoscout24_make_id": 51940,
+    "autoscout24_slug": "xpeng",
+    "mobilede_make_id": 32208
+  },
+  "ZAZ": {
+    "autoscout24_make_id": 16394,
+    "autoscout24_slug": "zaz",
+    "mobilede_make_id": null
+  },
+  "Zastava": {
+    "autoscout24_make_id": 16408,
+    "autoscout24_slug": "zastava",
+    "mobilede_make_id": null
+  },
+  "Zeekr": {
+    "autoscout24_make_id": 51964,
+    "autoscout24_slug": "zeekr",
+    "mobilede_make_id": 32331
+  },
+  "Zhidou": {
+    "autoscout24_make_id": 51798,
+    "autoscout24_slug": "zhidou",
+    "mobilede_make_id": 32032
+  },
+  "Zotye": {
+    "autoscout24_make_id": 51807,
+    "autoscout24_slug": "zotye",
+    "mobilede_make_id": null
+  },
+  "e.GO": {
+    "autoscout24_make_id": 51794,
+    "autoscout24_slug": "ego",
+    "mobilede_make_id": 31931
+  },
+  "firefly": {
+    "autoscout24_make_id": 53185,
+    "autoscout24_slug": "firefly",
+    "mobilede_make_id": null
+  },
+  "smart": {
+    "autoscout24_make_id": 15525,
+    "autoscout24_slug": "smart",
+    "mobilede_make_id": 23000
+  }
+}

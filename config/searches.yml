@@ -1,0 +1,28 @@
+# Search profiles. Each profile is scraped on both sources every run.
+#
+# Required: name, brand
+# Optional: model, year_from, mileage_max, price_max, price_min, fuel, gearbox, countries
+#
+# fuel:      diesel | petrol | hybrid | electric
+# gearbox:   automatic | manual
+# countries: autoscout24 country codes - D (Germany), A (Austria), B, NL, L, I, E, F
+#            mapped to mobile.de ISO codes automatically
+
+searches:
+  - name: "bmw-3-diesel"
+    brand: "BMW"
+    model: "320"
+    year_from: 2018
+    mileage_max: 150000
+    price_max: 20000
+    fuel: "diesel"
+    gearbox: "automatic"
+    countries: ["D", "A"]
+
+  - name: "audi-a4-avant"
+    brand: "Audi"
+    model: "A4"
+    year_from: 2017
+    mileage_max: 180000
+    price_max: 22000
+    countries: ["D"]
