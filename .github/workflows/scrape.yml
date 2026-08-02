@@ -31,11 +31,18 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # --drain lets the bot's commands work without hosting bot.py anywhere:
+      # pending /add, /list, button taps are processed here, once per cycle.
+      # Set the repo variable SELF_HOSTED_BOT=true if you run bot.py yourself -
+      # two getUpdates consumers make Telegram answer one of them with 409.
       - name: Run scraper
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python main.py ${{ inputs.seed && '--seed' || '' }}
+        run: >
+          python main.py
+          ${{ inputs.seed && '--seed' || '' }}
+          ${{ vars.SELF_HOSTED_BOT == 'true' && ' ' || '--drain' }}
 
       - name: Commit database
         run: |

@@ -52,7 +52,13 @@ class Listing:
     gearbox: Optional[str]
     url: str
     image_url: Optional[str]
-    first_seen: Optional[str] = None   # filled by db on insert
+    dealer_id: Optional[str] = None     # seller, for the "hide dealer" button
+    dealer_name: Optional[str] = None
+    first_seen: Optional[str] = None    # filled by db on insert
+
+    @property
+    def dealer_key(self) -> Optional[str]:
+        return f"{self.source}:{self.dealer_id}" if self.dealer_id else None
 
     def as_dict(self):
         return asdict(self)

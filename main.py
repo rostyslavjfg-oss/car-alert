@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 """Orchestrator: scrape -> dedupe -> match -> notify.
 
-    python main.py --seed     first run: fill the db, send nothing
-    python main.py            normal run
-    python main.py --dry-run  scrape and match, print instead of sending
+    python main.py --seed      first run: fill the db, send nothing
+    python main.py             normal run
+    python main.py --dry-run   scrape and match, print instead of sending
+    python main.py --drain     also process pending bot commands (Actions mode)
+
+Searches come from the `searches` table, which the Telegram bot writes. On an
+empty table config/searches.yml is imported once as a starting point.
 """
 
 import argparse
+import asyncio
 import logging
+import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
-from core.db import Db
+from core.db import Db, now
 from core.matcher import filter_matching
-from core.notifier import Notifier, MAX_PER_RUN
+from core.notifier import Alert, Notifier, MAX_PER_RUN
 from fetch_mobile_makes import load_brands, resolve_missing, save_brands
 from scrapers.autoscout24 import AutoScout24Scraper
 from scrapers.base import BotWallError
@@ -30,17 +34,22 @@ PRICE_DROP_THRESHOLD = 0.05          # notify on >= 5% drop
 log = logging.getLogger("car-alert")
 
 
-@dataclass
-class Alert:
-    row: dict                      # listing as a plain dict (must stay one object: tracked by identity)
-    old_price: Optional[int]
-    search_name: str
-    kind: str                      # 'new' | 'price_drop'
-
-
-def load_searches(path=SEARCHES_PATH) -> list:
-    with open(path, encoding="utf-8") as fh:
-        return (yaml.safe_load(fh) or {}).get("searches") or []
+def import_yaml_searches(db: Db) -> int:
+    """Seed the searches table from searches.yml - only while it is empty."""
+    if db.list_searches() or not SEARCHES_PATH.exists():
+        return 0
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not chat_id:
+        log.warning("searches table empty and TELEGRAM_CHAT_ID unset - nothing to scrape. "
+                    "Send /start then /add to the bot, or set the env var.")
+        return 0
+    with open(SEARCHES_PATH, encoding="utf-8") as fh:
+        profiles = (yaml.safe_load(fh) or {}).get("searches") or []
+    for profile in profiles:
+        db.add_search(chat_id, profile)
+    if profiles:
+        log.info("imported %d searches from config/searches.yml", len(profiles))
+    return len(profiles)
 
 
 def scrape_profile(scraper, profile: dict, max_pages: int, seen_ids) -> list:
@@ -57,88 +66,138 @@ def scrape_profile(scraper, profile: dict, max_pages: int, seen_ids) -> list:
     return []
 
 
-def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3) -> int:
-    searches = load_searches()
-    if not searches:
-        log.error("config/searches.yml has no searches")
-        return 1
-
-    brands = load_brands()
-    if resolve_missing(brands):
-        save_brands(brands)
-
+def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
+    """Scrape every active search and return the alerts that should go out."""
     scrapers = [AutoScout24Scraper(brands), MobileDeScraper(brands)]
-    pending = []          # [Alert(row, old_price, search_name, kind)]
+    pending = []
 
-    with Db() as db:
-        # overflow queued by the previous run goes out first
-        for row in db.dequeue_all():
-            pending.append(Alert(row, row.get("old_price"), row["search_name"], row["kind"]))
+    for row in db.dequeue_all():           # overflow from the previous run goes first
+        search = db.get_search(row["search_id"]) if row.get("search_id") else None
+        pending.append(Alert(row=row, chat_id=row.get("chat_id") or (search or {}).get("chat_id"),
+                             search_name=row["search_name"], search_id=row.get("search_id"),
+                             old_price=row.get("old_price"), kind=row["kind"]))
 
-        for profile in searches:
-            name = profile["name"]
-            log.info("search %s", name)
-            for scraper in scrapers:
-                seen_ids = db.known_ids(scraper.source)
-                fetched = scrape_profile(scraper, profile, max_pages, seen_ids)
-                new = [l for l in fetched if l.id not in seen_ids]
-                matched = filter_matching(new, profile)
-                known_matched = filter_matching(
-                    [l for l in fetched if l.id in seen_ids], profile)
+    for profile in db.list_searches(active_only=True):
+        name, chat_id = profile["name"], profile["chat_id"]
+        blocked = db.blocked_dealers(chat_id)
+        log.info("search #%s %s", profile["id"], name)
+        for scraper in scrapers:
+            seen_ids = db.known_ids(scraper.source)
+            fetched = scrape_profile(scraper, profile, max_pages, seen_ids)
+            new = [l for l in fetched if l.id not in seen_ids]
+            matched = [l for l in filter_matching(new, profile) if l.dealer_key not in blocked]
+            known = [l for l in filter_matching([l for l in fetched if l.id in seen_ids], profile)
+                     if l.dealer_key not in blocked]
 
-                alerts = []
-                if not seed:
-                    for listing in matched:
-                        if not db.already_notified(listing.id, name, "new"):
-                            alerts.append(Alert(listing.as_dict(), None, name, "new"))
-                    for listing in known_matched:
-                        old = db.get_price(listing.id)
-                        if (old and listing.price_eur
-                                and (old - listing.price_eur) / old >= PRICE_DROP_THRESHOLD
-                                and not db.already_notified(listing.id, name, "price_drop")):
-                            alerts.append(Alert(listing.as_dict(), old, name, "price_drop"))
-                pending.extend(alerts)
+            alerts = []
+            if not (seed or profile["muted"]):
+                for listing in matched:
+                    if not db.already_notified(listing.id, name, "new"):
+                        alerts.append(Alert(row=listing.as_dict(), chat_id=chat_id,
+                                            search_name=name, search_id=profile["id"]))
+                for listing in known:
+                    old = db.get_price(listing.id)
+                    if (old and listing.price_eur
+                            and (old - listing.price_eur) / old >= PRICE_DROP_THRESHOLD
+                            and not db.already_notified(listing.id, name, "price_drop")):
+                        alerts.append(Alert(row=listing.as_dict(), chat_id=chat_id,
+                                            search_name=name, search_id=profile["id"],
+                                            old_price=old, kind="price_drop"))
+            pending.extend(alerts)
 
-                for listing in fetched:
-                    db.upsert(listing)
+            for listing in fetched:
+                db.upsert(listing)
 
-                log.info("  %-12s fetched %3d | new %3d | matched %3d | to notify %3d",
-                         scraper.source, len(fetched), len(new), len(matched), len(alerts))
-            db.commit()
+            log.info("  %-12s fetched %3d | new %3d | matched %3d | to notify %3d",
+                     scraper.source, len(fetched), len(new), len(matched), len(alerts))
+        db.commit()
+    return pending
+
+
+def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = None) -> str:
+    owns_db = db is None
+    db = db or Db()
+    try:
+        brands = load_brands()
+        if resolve_missing(brands):
+            save_brands(brands)
+        import_yaml_searches(db)
+
+        if not db.list_searches(active_only=True):
+            log.warning("no active searches")
+            return "No active searches. Use /add."
+
+        pending = collect_alerts(db, brands, seed, max_pages)
+        db.set_meta("last_run", now())
 
         if seed:
-            log.info("seed mode: %d listings stored, no notifications sent",
-                     len(db.known_ids()))
-            return 0
+            total = len(db.known_ids())
+            log.info("seed mode: %d listings stored, no notifications sent", total)
+            return f"Seeded {total} listings, no messages sent."
 
         notifier = Notifier(dry_run=dry_run, max_per_run=MAX_PER_RUN)
-        sent, deferred = notifier.send_batch([(a.row, a.old_price) for a in pending])
-        sent_ids = {id(row) for row, _ in sent}
-
+        sent, deferred = notifier.send_batch(pending)
         for alert in pending:
-            if id(alert.row) in sent_ids:
-                db.mark_notified(alert.row["id"], alert.search_name, alert.kind)
-                db.drop_from_queue(alert.row["id"], alert.search_name, alert.kind)
+            if alert.sent:
+                db.mark_notified(alert.listing_id, alert.search_name, alert.kind)
+                db.drop_from_queue(alert.listing_id, alert.search_name, alert.kind)
             else:
-                db.enqueue(alert.row["id"], alert.search_name, alert.kind, alert.old_price)
+                db.enqueue(alert.listing_id, alert.search_name, alert.kind,
+                           alert.old_price, alert.chat_id, alert.search_id)
         db.commit()
-
         log.info("notified %d | queued for next run %d", len(sent), len(deferred))
-    return 0
+        return f"Sent {len(sent)} alerts, {len(deferred)} queued for the next run."
+    finally:
+        if owns_db:
+            db.commit()
+            db.close()
+
+
+def drain_bot_updates(db: Db) -> None:
+    """Process bot commands queued since the last run (Actions has no long-poll)."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        return
+    from core.telegram_app import build_application
+
+    async def go():
+        app = build_application(token, db, load_brands())
+        async with app:
+            offset = db.get_meta("tg_offset")
+            updates = await app.bot.get_updates(
+                offset=int(offset) if offset else None, timeout=0, limit=100)
+            for update in updates:
+                try:
+                    await app.process_update(update)
+                except Exception:
+                    log.exception("failed to process update %s", update.update_id)
+                db.set_meta("tg_offset", update.update_id + 1)
+            if updates:
+                log.info("processed %d bot updates", len(updates))
+
+    try:
+        asyncio.run(go())
+    except Exception as exc:
+        log.warning("could not drain bot updates: %s: %s", type(exc).__name__, exc)
 
 
 def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
-                        format="%(asctime)s %(levelname)s %(message)s",
-                        datefmt="%H:%M:%S")
+                        format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", action="store_true",
                     help="store current listings without notifying (first run)")
     ap.add_argument("--dry-run", action="store_true", help="print messages instead of sending")
+    ap.add_argument("--drain", action="store_true", help="process pending bot commands first")
     ap.add_argument("--max-pages", type=int, default=3)
     args = ap.parse_args()
-    sys.exit(run(seed=args.seed, dry_run=args.dry_run, max_pages=args.max_pages))
+
+    with Db() as db:
+        if args.drain:
+            drain_bot_updates(db)
+        run(seed=args.seed, dry_run=args.dry_run, max_pages=args.max_pages, db=db)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

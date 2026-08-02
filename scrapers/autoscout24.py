@@ -64,6 +64,7 @@ class AutoScout24Scraper(BaseScraper):
     def _to_listing(self, raw: dict) -> Listing:
         v = raw.get("vehicle") or {}
         tracking = raw.get("tracking") or {}
+        seller = raw.get("seller") or {}
         images = raw.get("images") or []
         # thumbnails come as .../250x188.webp - ask for something Telegram-worthy
         image = images[0].replace("/250x188.webp", "/640x480.webp") if images else None
@@ -80,6 +81,8 @@ class AutoScout24Scraper(BaseScraper):
             gearbox=self.norm_gearbox(v.get("transmission")),
             url="https://www.autoscout24.com" + (raw.get("url") or ""),
             image_url=image,
+            dealer_id=str(seller.get("id")) if seller.get("id") else None,
+            dealer_name=seller.get("companyName") or seller.get("contactName"),
         )
 
     def search(self, profile: dict, max_pages: int = 3, seen_ids=frozenset()) -> list:

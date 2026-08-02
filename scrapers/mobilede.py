@@ -93,6 +93,11 @@ class MobileDeScraper(BaseScraper):
     def _to_listing(self, raw: dict) -> Listing:
         attr = raw.get("attr") or {}
         price = ((raw.get("price") or {}).get("grs") or {}).get("amount")
+        # every private seller shares one bucket sellerId (7723851 today), so only
+        # real dealers get an id the user can block
+        contact = raw.get("contact") or {}
+        dealer_id = (str(raw["sellerId"])
+                     if raw.get("sellerId") and contact.get("enumType") == "DEALER" else None)
         return Listing(
             id=f"{self.source}:{raw.get('id')}",
             source=self.source,
@@ -105,6 +110,8 @@ class MobileDeScraper(BaseScraper):
             gearbox=self.norm_gearbox(attr.get("tr")),
             url=raw.get("url") or f"https://suchen.mobile.de/auto-inserat/{raw.get('id')}.html",
             image_url=self._image_url(raw),
+            dealer_id=dealer_id,
+            dealer_name=contact.get("name") or raw.get("st"),
         )
 
     def search(self, profile: dict, max_pages: int = 3, seen_ids=frozenset()) -> list:

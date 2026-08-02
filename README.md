@@ -1,38 +1,71 @@
 # car-alert
 
-Free listing watcher for **mobile.de** and **autoscout24.com**. Runs on GitHub
-Actions every 30 minutes, keeps state in a committed SQLite file, and pushes new
-matches to Telegram. No VPS, no paid APIs.
+Free listing watcher for **mobile.de** and **autoscout24.com** with a Telegram
+bot front end. Runs on GitHub Actions every 30 minutes, keeps state in a
+committed SQLite file, pushes matches to your chat. No VPS, no paid APIs.
 
 ## Setup
 
-1. Create a bot with [@BotFather](https://t.me/BotFather), send it a message,
-   and read your chat id from
-   `https://api.telegram.org/bot<TOKEN>/getUpdates`.
-2. Repo → Settings → Secrets and variables → Actions:
-   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
-3. Edit `config/searches.yml`.
+1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the token.
+2. Repo → Settings → Secrets and variables → Actions → **Secrets**:
+   `TELEGRAM_BOT_TOKEN`. Optionally `TELEGRAM_CHAT_ID` — only needed if you want
+   `config/searches.yml` imported automatically on the first run.
+3. Send `/start` to your bot, then `/add` to create a search.
 4. Seed the database once so the first real run does not fire hundreds of
    messages — Actions → *scrape* → *Run workflow* with **seed = true**, or
-   locally:
-
-   ```bash
-   pip install -r requirements.txt
-   python main.py --seed
-   ```
+   locally `python main.py --seed`.
 
 From then on the cron takes over.
+
+## Telegram bot
+
+| command | what it does |
+|---|---|
+| `/start` | registers your chat |
+| `/add` | 8-step dialog: brand → model → year → price → mileage → fuel → gearbox → countries (`-` skips a step) |
+| `/list` | your searches, each with ⏸ Pause / 🗑 Delete buttons |
+| `/del <id>` `/pause <id>` `/resume <id>` | same, by id |
+| `/fav` | saved listings |
+| `/dealers` | hidden sellers; `/dealers <key>` unhides one |
+| `/run` | scrape immediately (only when `bot.py` is running) |
+| `/status` | counters and last run time |
+| `/cancel` | abort the `/add` dialog |
+
+Every alert carries three buttons: **❤️ Save**, **🚫 Hide seller**,
+**🔕 Mute** (silences that search without deleting it).
+
+### Two ways to run the bot
+
+**Zero hosting (default).** The Actions run calls `main.py --drain`, which
+processes everything you sent since the last cycle. Commands work, but replies
+land up to 30 minutes later.
+
+**Instant replies.** Run the long-polling process wherever you like — your Mac,
+a free tier VM:
+
+```bash
+export TELEGRAM_BOT_TOKEN=...
+python bot.py
+```
+
+Then set the repo variable `SELF_HOSTED_BOT=true` so the workflow stops draining.
+Telegram allows exactly one `getUpdates` consumer; running both gives HTTP 409.
 
 ## Local usage
 
 ```bash
 python main.py --dry-run      # scrape + match, print messages instead of sending
-python main.py                # real run (needs the two env vars)
+python main.py                # real run (needs TELEGRAM_BOT_TOKEN)
+python main.py --drain        # also process pending bot commands
 python main.py --max-pages 1  # shallower scrape
+python bot.py                 # long-polling bot
 python fetch_mobile_makes.py  # refresh mobile.de make ids in config/brands.json
 ```
 
 ## Search profiles
+
+Searches live in the `searches` table, written by the bot. `config/searches.yml`
+is imported once, only while that table is empty and `TELEGRAM_CHAT_ID` is set:
 
 ```yaml
 searches:
@@ -80,6 +113,7 @@ request with `psz = min(50·N, 200)`.
   `notification_queue` and are sent first on the next run.
 - **Price drops** — known ads that reappear with a price ≥5 % lower trigger a
   `PRICE DROP -x%: old → new` message (once per listing per search).
+- **Hidden sellers** — blocked seller ids are filtered before matching, per chat.
 - **Logging** — one line per source per search:
   `fetched / new / matched / to notify`.
 
@@ -88,20 +122,27 @@ request with `psz = min(50·N, 200)`.
 ```
 .github/workflows/scrape.yml   cron, run, commit listings.db back
 config/brands.json             314 brands: autoscout24 slug + mobile.de makeId
-config/searches.yml            your search profiles
+config/searches.yml            optional starting profiles (imported once)
 scrapers/base.py               HTTP, UA rotation, throttling, Listing schema
 scrapers/autoscout24.py
 scrapers/mobilede.py
-core/db.py                     SQLite: listings, notifications_sent, queue
+core/db.py                     SQLite: listings, searches, favorites, queue, ...
 core/matcher.py                profile matching
-core/notifier.py               Telegram sending + caption building
+core/notifier.py               Telegram sending + caption + inline buttons
+core/telegram_app.py           bot commands and callbacks
+bot.py                         long-polling bot process
 fetch_mobile_makes.py          resolves missing mobile.de make ids
 main.py                        orchestrator
 ```
 
 ## Normalized schema
 
-`{id, source, brand, model, year, mileage_km, price_eur, fuel, gearbox, url, image_url, first_seen}`
+`{id, source, brand, model, year, mileage_km, price_eur, fuel, gearbox, url, image_url, dealer_id, dealer_name, first_seen}`
+
+`dealer_id`/`dealer_name` back the "Hide seller" button. On mobile.de **every
+private seller shares one bucket `sellerId`** (7723851 today), so only real
+dealers get a blockable id there — otherwise one tap would hide every private
+ad. autoscout24 gives private sellers real ids, so they can be hidden.
 
 ## Caveats
 
