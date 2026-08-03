@@ -192,10 +192,12 @@ def describe(profile: dict) -> str:
 
 def search_keyboard(profile: dict) -> InlineKeyboardMarkup:
     sid = profile["id"]
-    toggle = ("▶️ Возобновить", f"resume:{sid}") if profile["paused"] else \
-             ("⏸ Пауза", f"pause:{sid}")
+    # keyword args on purpose: the second positional of InlineKeyboardButton is
+    # `url`, so *toggle silently built a link button and Telegram rejected it
+    label, action = ("▶️ Возобновить", f"resume:{sid}") if profile["paused"] else \
+                    ("⏸ Пауза", f"pause:{sid}")
     return InlineKeyboardMarkup([[
-        InlineKeyboardButton(*toggle),
+        InlineKeyboardButton(label, callback_data=action),
         InlineKeyboardButton("\U0001f5d1 Удалить", callback_data=f"del:{sid}"),
     ]])
 

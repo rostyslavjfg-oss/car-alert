@@ -329,6 +329,16 @@ def test_keyboards():
     check("callback короче 64 байт",
           all(len(b.callback_data.encode()) <= 64
               for row in kb.inline_keyboard for b in row))
+    # every inline button must carry callback_data and no url - passing the
+    # action positionally made it a url and Telegram answered BadRequest
+    for paused in (0, 1):
+        sk = ta.search_keyboard({"id": 3, "paused": paused})
+        row = sk.inline_keyboard[0]
+        check(f"кнопки поиска (paused={paused}) шлют callback",
+              [b.callback_data for b in row],
+              ["resume:3" if paused else "pause:3", "del:3"])
+        check(f"кнопки поиска (paused={paused}) без url",
+              [b.url for b in row], [None, None])
     lk = ta.listing_keyboard("mobilede:123", "mobilede:456", 7)
     check("кнопки под объявлением",
           [b.callback_data for b in lk.inline_keyboard[0]],
