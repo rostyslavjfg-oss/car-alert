@@ -1,8 +1,9 @@
 name: scrape
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+  # no schedule: the Mac runs bot.py + scripts/scrape_and_push.sh via launchd
+  # and owns listings.db. GitHub's cron was firing with 1.5-4 h gaps anyway.
+  # Re-enable a schedule only if the launchd setup is retired.
   workflow_dispatch:
     inputs:
       seed:
