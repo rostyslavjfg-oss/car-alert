@@ -41,6 +41,8 @@ SOURCES = [AutoScout24Scraper, MobileDeScraper, BazosScraper, WillhabenScraper,
 ROOT = Path(__file__).resolve().parent
 SEARCHES_PATH = ROOT / "config" / "searches.yml"
 PRICE_DROP_THRESHOLD = 0.05          # notify on >= 5% drop
+PRUNE_AFTER_DAYS = 60                # forget ads gone from every feed
+ENRICH_PER_RUN = 8                   # extra page fetches for photo albums
 
 log = logging.getLogger("car-alert")
 
@@ -113,6 +115,8 @@ def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
                 else cls(brands) for cls in SOURCES]
     pending = []
 
+    seen_vins = {}                         # chat_id -> VINs alerted this run
+
     for row in db.dequeue_all():           # overflow from the previous run goes first
         search = db.get_search(row["search_id"]) if row.get("search_id") else None
         pending.append(Alert(row=row, chat_id=row.get("chat_id") or (search or {}).get("chat_id"),
@@ -141,10 +145,26 @@ def collect_alerts(db: Db, brands: dict, seed: bool, max_pages: int) -> list:
 
             alerts = []
             if not (seed or profile["muted"]):
+                enriched = 0
                 for listing in matched:
-                    if not db.already_notified(listing.id, name, "new"):
-                        alerts.append(Alert(row=listing.as_dict(), chat_id=chat_id,
-                                            search_name=name, search_id=profile["id"]))
+                    if db.already_notified(listing.id, name, "new"):
+                        continue
+                    # the same physical car often sits on several sites
+                    if listing.vin and (listing.vin in seen_vins.get(chat_id, set())
+                                        or db.vin_already_notified(chat_id, listing.vin)):
+                        log.info("  %-12s dup VIN %s, skipping %s",
+                                 scraper.source, listing.vin, listing.id)
+                        db.mark_notified(listing.id, name, "new")
+                        continue
+                    if listing.vin:
+                        seen_vins.setdefault(chat_id, set()).add(listing.vin)
+                    # sources whose list view has one photo can fetch the album
+                    if (enriched < ENRICH_PER_RUN and len(listing.images) <= 1
+                            and hasattr(scraper, "enrich_photos")):
+                        scraper.enrich_photos(listing)
+                        enriched += 1
+                    alerts.append(Alert(row=listing.as_dict(), chat_id=chat_id,
+                                        search_name=name, search_id=profile["id"]))
                 for listing in known:
                     old = db.get_price(listing.id)
                     if (old and listing.price_eur
@@ -178,6 +198,9 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
             return "Активных поисков нет. Создай через /add."
 
         pending = collect_alerts(db, brands, seed, max_pages)
+        removed = db.prune(PRUNE_AFTER_DAYS)
+        if removed:
+            log.info("pruned %d listings unseen for %d days", removed, PRUNE_AFTER_DAYS)
         db.set_meta("last_run", now())
         export_webapp_decks(db)
 

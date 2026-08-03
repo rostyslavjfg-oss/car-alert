@@ -523,13 +523,19 @@ async def cmd_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_fav(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    rows = _db(context).list_favorites(update.effective_chat.id)
+    rows = _db(context).list_favorites(update.effective_chat.id, limit=10)
     if not rows:
         await update.message.reply_text("Избранного пока нет — жми ❤️ под объявлением.")
         return
-    lines = [f"• {r['brand']} {r['model']} · {r['year'] or '?'} · "
-             f"{(r['price_eur'] or 0):,} €\n{r['url']}".replace(",", " ") for r in rows]
-    await update.message.reply_text("\n\n".join(lines), disable_web_page_preview=True)
+    for r in rows:
+        price = f"{r['price_eur']:,}".replace(",", " ") if r.get("price_eur") else "?"
+        text = (f"{r['brand']} {r['model']} · {r['year'] or '?'} · {price} €"
+                + (f"\nVIN: {r['vin']}" if r.get("vin") else "")
+                + f"\n{r['url']}")
+        await update.message.reply_text(
+            text, disable_web_page_preview=False,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(
+                "\U0001f5d1 Убрать", callback_data=f"unfav:{r['id']}")]]))
 
 
 async def cmd_dealers(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -551,11 +557,18 @@ async def cmd_dealers(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    s = _db(context).stats()
-    await update.message.reply_text(
-        f"объявлений в базе: {s['listings']}\nпоисков: {s['searches']}\n"
-        f"в очереди на отправку: {s['queued']}\nв избранном: {s['favorites']}\n"
-        f"последний прогон: {s['last_run']}")
+    db = _db(context)
+    s = db.stats()
+    lines = [f"объявлений в базе: {s['listings']}",
+             f"в очереди на отправку: {s['queued']}",
+             f"в избранном: {s['favorites']}",
+             f"последний прогон: {s['last_run']}"]
+    per_search = db.search_stats(update.effective_chat.id)
+    if per_search:
+        lines.append("")
+        lines.append("алертов по поискам:")
+        lines += [f"  • {name}: {count}" for name, count in per_search]
+    await update.message.reply_text("\n".join(lines))
 
 
 async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -663,6 +676,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif action == "fav":
         added = db.toggle_favorite(chat_id, payload)
         await query.answer("Добавил в избранное" if added else "Убрал из избранного")
+    elif action == "unfav":
+        db.toggle_favorite(chat_id, payload)
+        await query.answer("Убрано из избранного")
+        await query.edit_message_text("Убрано из избранного.")
     elif action == "blk":
         db.block_dealer(chat_id, payload)
         await query.answer("Продавец скрыт — больше не покажу")

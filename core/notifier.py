@@ -62,8 +62,12 @@ def _fmt(n, suffix=""):
 
 
 def build_caption(row: dict, old_price=None) -> str:
+    name = f"{row.get('brand') or ''} {row.get('model') or ''}".strip()
+    # sources without a model field (bazos) still have the seller's headline
+    if (not row.get("model")) and row.get("title"):
+        name = str(row["title"])[:48]
     head = " - ".join([
-        f"{row.get('brand') or ''} {row.get('model') or ''}".strip() or "Car",
+        name or "Car",
         str(row.get("year") or "?"),
         _fmt(row.get("mileage_km"), " км"),
         _fmt(row.get("price_eur"), " €"),

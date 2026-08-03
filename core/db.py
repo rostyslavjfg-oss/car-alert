@@ -458,6 +458,38 @@ class Db:
         self.conn.execute("DELETE FROM dialog_state WHERE chat_id = ?", (str(chat_id),))
         self.conn.commit()
 
+    def vin_already_notified(self, chat_id, vin: str) -> bool:
+        """The same car often sits on two sites - one alert per VIN per chat."""
+        return self.conn.execute(
+            """SELECT 1 FROM notifications_sent n
+               JOIN listings l ON l.id = n.listing_id
+               JOIN searches s ON s.name = n.search_name AND s.chat_id = ?
+               WHERE l.vin = ? LIMIT 1""", (str(chat_id), vin)).fetchone() is not None
+
+    def prune(self, days: int = 60) -> int:
+        """Drop listings unseen for `days` (the ad is gone from every feed we
+        read). Favorited and queued rows survive; their bookkeeping stays."""
+        cur = self.conn.execute(
+            """DELETE FROM listings WHERE last_seen < datetime('now', ?)
+               AND id NOT IN (SELECT listing_id FROM favorites)
+               AND id NOT IN (SELECT listing_id FROM notification_queue)""",
+            (f"-{int(days)} days",))
+        removed = cur.rowcount
+        if removed:
+            self.conn.execute("DELETE FROM notifications_sent WHERE listing_id NOT IN"
+                              " (SELECT id FROM listings)")
+            self.conn.execute("DELETE FROM swipes WHERE listing_id NOT IN"
+                              " (SELECT id FROM listings)")
+            self.conn.commit()
+        return removed
+
+    def search_stats(self, chat_id) -> list:
+        """[(search name, alerts sent)] for /status."""
+        return [(r[0], r[1]) for r in self.conn.execute(
+            """SELECT s.name, count(n.listing_id) FROM searches s
+               LEFT JOIN notifications_sent n ON n.search_name = s.name
+               WHERE s.chat_id = ? GROUP BY s.name ORDER BY s.id""", (str(chat_id),))]
+
     # --- meta -------------------------------------------------------------
     def get_meta(self, key: str, default=None):
         row = self.conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()

@@ -194,6 +194,47 @@ def test_db():
         db.close()
 
 
+def test_prune_and_vin_dedupe():
+    print("\nчистка базы и дедуп по VIN")
+    with tempfile.TemporaryDirectory() as tmp:
+        db = Db(Path(tmp) / "p.db")
+        db.add_search(1, {"name": "s1", "brands": ["BMW"]})
+        old = listing(id="a:old", vin="WBAJB91060B168910")
+        db.upsert(old)
+        db.conn.execute("UPDATE listings SET last_seen = datetime('now','-90 days')"
+                        " WHERE id='a:old'")
+        db.upsert(listing(id="a:fresh"))
+        db.upsert(listing(id="a:kept"))
+        db.conn.execute("UPDATE listings SET last_seen = datetime('now','-90 days')"
+                        " WHERE id='a:kept'")
+        db.toggle_favorite(1, "a:kept")
+        db.mark_notified("a:old", "s1")
+        check("до чистки 3 объявления",
+              db.conn.execute("SELECT count(*) FROM listings").fetchone()[0], 3)
+        check("VIN уже слался", db.vin_already_notified(1, "WBAJB91060B168910"), True)
+        check("чужой чат не видит VIN", db.vin_already_notified(2, "WBAJB91060B168910"), False)
+        removed = db.prune(60)
+        check("удалено ровно одно", removed, 1)
+        ids = {r[0] for r in db.conn.execute("SELECT id FROM listings")}
+        check("свежее и избранное живы", ids, {"a:fresh", "a:kept"})
+        check("notifications_sent подчищен",
+              db.conn.execute("SELECT count(*) FROM notifications_sent").fetchone()[0], 0)
+        db.close()
+
+
+def test_bazos_photos():
+    print("\nальбом bazos")
+    from scrapers.bazos import extract_photo_urls, _fullsize
+    check("миниатюра -> полный размер",
+          _fullsize("https://www.bazos.sk/img/1t/597/194163597.jpg?t=1"),
+          "https://www.bazos.sk/img/1/597/194163597.jpg?t=1")
+    html = " ".join(f'<img src="https://www.bazos.sk/img/{n}/597/194163597.jpg?t=1">'
+                    for n in [3, 1, 2, 1, 7, 4, 5, 6])
+    photos = extract_photo_urls(html)
+    check("фото отсортированы и без дублей", len(photos), 5)
+    check("первым идёт /img/1/", "/img/1/" in photos[0])
+
+
 def test_caption():
     print("\nкарточка")
     cap = build_caption({"brand": "BMW", "model": "320", "year": 2019, "mileage_km": 130000,
@@ -203,6 +244,12 @@ def test_caption():
     check("страна в карточке", "🇩🇪 Германия, Köln" in cap)
     check("источник читаемо", "mobile.de" in cap)
     check("русские значения", "дизель" in cap and "автомат" in cap)
+    bare = build_caption({"brand": "Skoda", "model": "", "title": "Škoda Octavia 2.0 TDI DSG, servisná knižka",
+                          "source": "bazos", "url": "u"})
+    check("без модели берётся заголовок", "Octavia 2.0 TDI" in bare)
+    vin_cap = build_caption({"brand": "BMW", "model": "320", "vin": "WBAJB91060B168910",
+                             "source": "sauto", "url": "u"})
+    check("VIN в карточке", "VIN: WBAJB91060B168910" in vin_cap)
     drop = build_caption({"brand": "BMW", "model": "320", "price_eur": 9000,
                           "source": "bazos", "country": "SK", "damaged": True, "url": "u"},
                          old_price=12000)
@@ -441,6 +488,8 @@ def main():
     test_matcher()
     test_expand()
     test_db()
+    test_prune_and_vin_dedupe()
+    test_bazos_photos()
     test_caption()
     test_dialog()
     test_dialog_single_brand()

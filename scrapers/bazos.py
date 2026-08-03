@@ -12,7 +12,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from .base import BaseScraper, Listing, find_vin
+from .base import MAX_IMAGES, BaseScraper, Listing, find_vin
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +46,26 @@ DAMAGE_RE = re.compile(
 
 def looks_damaged(text: str) -> bool:
     return bool(DAMAGE_RE.search(NEGATED_RE.sub(" ", text)))
+
+
+PHOTO_RE = re.compile(r"https://www\.bazos\.sk/img/(\d+)/(\d+)/(\d+)\.jpg[^\"']*")
+
+
+def _fullsize(url):
+    """/img/1t/597/1941.jpg -> /img/1/597/1941.jpg"""
+    return re.sub(r"/img/(\d+)t/", r"/img/\1/", url) if url else url
+
+
+def extract_photo_urls(html: str) -> list:
+    """Distinct full-size photo urls from an ad page, in gallery order."""
+    seen, out = set(), []
+    for m in PHOTO_RE.finditer(html or ""):
+        key = m.group(1)
+        if key not in seen:
+            seen.add(key)
+            out.append(m.group(0))
+    out.sort(key=lambda u: int(PHOTO_RE.match(u).group(1)))
+    return out[:MAX_IMAGES]
 
 
 class BazosScraper(BaseScraper):
@@ -113,9 +133,10 @@ class BazosScraper(BaseScraper):
             fuel=self._word(text, FUEL_WORDS),
             gearbox=self._word(text, GEARBOX_WORDS),
             url="https://auto.bazos.sk" + href if href.startswith("/") else href,
-            # the result list holds one thumbnail; more would cost a request per ad
-            image_url=image.get("src") if image else None,
-            images=[image["src"]] if image and image.get("src") else [],
+            # the list view holds a thumbnail (/img/1t/...); the full-size photo
+            # lives at /img/1/... - same file name, no extra request
+            image_url=_fullsize(image.get("src")) if image else None,
+            images=[_fullsize(image["src"])] if image and image.get("src") else [],
             title=title,
             country="SK",
             city=None,
@@ -125,6 +146,17 @@ class BazosScraper(BaseScraper):
             dealer_id=None,        # bazos exposes no stable seller id in the result list
             dealer_name=None,
         )
+
+    def enrich_photos(self, listing) -> None:
+        """One page fetch turns the single thumbnail into a full album."""
+        try:
+            photos = extract_photo_urls(self.get(listing.url).text)
+        except Exception as exc:
+            log.debug("bazos: photo enrich failed for %s: %s", listing.id, exc)
+            return
+        if photos:
+            listing.images = photos
+            listing.image_url = photos[0]
 
     def search(self, profile: dict, max_pages: int = 3, seen_ids=frozenset()) -> list:
         out = []
