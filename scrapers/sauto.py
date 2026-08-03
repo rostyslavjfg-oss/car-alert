@@ -31,7 +31,8 @@ FUEL_PARAM = {"petrol": 1, "diesel": 2, "electric": 4, "hybrid": 5}
 FUEL_NAME = {1: "petrol", 2: "diesel", 3: "petrol", 4: "electric", 5: "hybrid", 6: "petrol"}
 GEARBOX_PARAM = {"manual": 1, "automatic": 3}
 GEARBOX_NAME = {1: "manual", 3: "automatic"}
-DAMAGE_WORDS = ("havar", "po nehodě", "po nehode", "poškozen", "nepojízdn", "na díly")
+DAMAGE_WORDS = ("havar", "po nehodě", "po nehode", "poškozen", "nepojízdn", "na díly",
+                "bourané", "po bouračce", "vadný motor", "na náhradní díly")
 
 
 class SautoScraper(BaseScraper):
@@ -106,8 +107,9 @@ class SautoScraper(BaseScraper):
         )
 
     def _fill_missing_years(self, listings: list) -> None:
-        """Ask the detail endpoint for the ads the list view left undated."""
-        missing = [l for l in listings if l.year is None]
+        """Ask the detail endpoint for the year the list view leaves empty.
+        The same answer carries the VIN, so it is picked up for free."""
+        missing = [l for l in listings if l.year is None or l.vin is None]
         if not missing:
             return
         if len(missing) > MAX_YEAR_LOOKUPS:
@@ -126,8 +128,10 @@ class SautoScraper(BaseScraper):
                 log.debug("sauto: year lookup failed for %s: %s", item_id, exc)
                 continue
             raw = detail.get("manufacturing_date") or detail.get("in_operation_date")
-            if raw and str(raw)[:4].isdigit():
+            if listing.year is None and raw and str(raw)[:4].isdigit():
                 listing.year = int(str(raw)[:4])
+            if not listing.vin and detail.get("vin"):
+                listing.vin = str(detail["vin"]).strip().upper()
 
     def search(self, profile: dict, max_pages: int = 3, seen_ids=frozenset()) -> list:
         out, by_id = [], set()
@@ -149,6 +153,5 @@ class SautoScraper(BaseScraper):
         # the API has no "newest first" sort, so ordering happens here
         out.sort(key=lambda pair: pair[0], reverse=True)
         listings = [listing for _, listing in out]
-        if profile.get("year_from"):
-            self._fill_missing_years(listings)
+        self._fill_missing_years(listings)
         return listings

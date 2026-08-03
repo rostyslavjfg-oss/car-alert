@@ -76,6 +76,20 @@ def test_damage():
                        ("bez poškodenia", False), ("nehavarované", False),
                        ("pekný stav", False)]:
         check(f"{text!r} -> {'битая' if want else 'целая'}", looks_damaged(text), want)
+    from scrapers.base import find_vin, looks_damaged_de
+    check("VIN найден", find_vin("Predám BMW, VIN WBAJB91060B168910, serviska"),
+          "WBAJB91060B168910")
+    check("VIN с I/O/Q не матчится", find_vin("IIIIIIIIIIIIIIIII WWW00000000000000"), None)
+    check("не-VIN 17 цифр отброшен", find_vin("12345678901234567"), None)
+    check("нет VIN -> None", find_vin("обычный текст"), None)
+    for text, want in [("Motorschaden, fährt nicht", True), ("Getriebeschaden", True),
+                       ("Unfallwagen Bastler", True), ("Für Export", True),
+                       ("unfallfrei, scheckheftgepflegt", False), ("kein Unfall", False),
+                       ("ohne Unfallschaden", False)]:
+        check(f"de: {text!r}", looks_damaged_de(text), want)
+    from scrapers.bazos import looks_damaged as lb
+    check("sk: chybný motor -> битая", lb("chybný motor, treba opravu"), True)
+    check("sk: na súčiastky -> битая", lb("predám na súčiastky"), True)
     prof = {"exclude_damaged": 1}
     check("битая отсеивается", matches(listing(damaged=True), prof), False)
     check("целая проходит", matches(listing(damaged=False), prof), True)

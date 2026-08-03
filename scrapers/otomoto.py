@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 
 from core.currency import to_eur
 
-from .base import BaseScraper, BotWallError, Listing
+from .base import BaseScraper, BotWallError, Listing, find_vin
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +30,8 @@ FUEL_PARAM = {"diesel": "diesel", "petrol": "petrol", "hybrid": "hybrid",
 # "Bezwypadkowy" means accident-FREE and contains "wypadkow" - the negation has
 # to be cut first or every clean car would be flagged
 NEGATED_RE = re.compile(r"\bbez\s*wypadkow\w*|\bbezwypadkow\w*|\bnieuszkodzon\w*", re.I)
-DAMAGE_RE = re.compile(r"\buszkodzon\w*|\bpowypadkow\w*|\bna cz[eę][sś]ci\b", re.I)
+DAMAGE_RE = re.compile(r"\buszkodzon\w*|\bpowypadkow\w*|\bpo wypadku\b"
+                       r"|\bna cz[eę][sś]ci\b|\bdo remontu silnika\b", re.I)
 
 
 def looks_damaged(text: str) -> bool:
@@ -144,6 +145,7 @@ class OtomotoScraper(BaseScraper):
             country="PL",
             city=city,
             damaged=looks_damaged(f"{title} {subtitle}"),
+            vin=find_vin(f"{title} {subtitle}"),
             model_relaxed=relaxed,
             dealer_id=None,                 # the card exposes no stable seller id
             dealer_name=None,

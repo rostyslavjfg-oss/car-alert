@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS listings (
     country     TEXT,
     city        TEXT,
     damaged     INTEGER,
+    vin         TEXT,
     dealer_id   TEXT,
     dealer_name TEXT,
     first_seen  TEXT NOT NULL,
@@ -131,6 +132,7 @@ MIGRATIONS = [
     ("listings", "country", "TEXT"),
     ("listings", "city", "TEXT"),
     ("listings", "damaged", "INTEGER"),
+    ("listings", "vin", "TEXT"),
     ("searches", "exclude_damaged", "INTEGER NOT NULL DEFAULT 1"),
     ("searches", "brands", "TEXT"),
     ("searches", "models", "TEXT"),
@@ -209,11 +211,11 @@ class Db:
         self.conn.execute(
             """INSERT INTO listings (id, source, brand, model, year, mileage_km, price_eur,
                                      fuel, gearbox, url, image_url, images, title,
-                                     country, city, damaged, dealer_id, dealer_name,
-                                     first_seen, last_seen)
+                                     country, city, damaged, vin, dealer_id,
+                                     dealer_name, first_seen, last_seen)
                VALUES (:id, :source, :brand, :model, :year, :mileage_km, :price_eur,
                        :fuel, :gearbox, :url, :image_url, :images, :title,
-                       :country, :city, :damaged, :dealer_id, :dealer_name, :ts, :ts)
+                       :country, :city, :damaged, :vin, :dealer_id, :dealer_name, :ts, :ts)
                ON CONFLICT(id) DO UPDATE SET
                    price_eur = excluded.price_eur,
                    mileage_km = excluded.mileage_km,
@@ -224,6 +226,7 @@ class Db:
                    country = excluded.country,
                    city = excluded.city,
                    damaged = excluded.damaged,
+                   vin = COALESCE(excluded.vin, vin),
                    dealer_id = excluded.dealer_id,
                    dealer_name = excluded.dealer_name,
                    last_seen = excluded.last_seen""",

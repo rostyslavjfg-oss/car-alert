@@ -206,7 +206,7 @@ def run(seed: bool = False, dry_run: bool = False, max_pages: int = 3, db: Db = 
 
 WEBAPP_DATA = ROOT / "webapp" / "data"
 DECK_FIELDS = ("id", "source", "brand", "model", "year", "mileage_km", "price_eur",
-               "fuel", "gearbox", "url", "image_url", "country", "city", "damaged")
+               "fuel", "gearbox", "url", "image_url", "country", "city", "damaged", "vin")
 
 
 def export_webapp_decks(db: Db) -> int:

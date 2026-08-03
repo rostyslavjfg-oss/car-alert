@@ -201,6 +201,7 @@ function buildCard(item) {
         · ${esc(GEAR[item.gearbox] || item.gearbox || "?")} · ${esc(item.source || "")}</div>
       <div class="meta">${esc(COUNTRY[item.country] || item.country || "")}${
         item.city ? ", " + esc(item.city) : ""}</div>
+      ${item.vin ? `<div class="meta">VIN: ${esc(item.vin)}</div>` : ""}
       <a href="${esc(item.url || "#")}" target="_blank" rel="noopener">Открыть объявление ↗</a>
     </div>`;
   const img = el.querySelector("img");

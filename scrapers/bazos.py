@@ -12,7 +12,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from .base import BaseScraper, Listing
+from .base import BaseScraper, Listing, find_vin
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ NEGATED_RE = re.compile(
 DAMAGE_RE = re.compile(
     r"\bhavar\w*|\bpo nehode\b|\bnabúran\w*|\bnaburan\w*|\bbúran\w*|\bburan\w*"
     r"|\bpoškoden\w*|\bposkoden\w*|\bna diely\b|\bna náhradné diely\b"
-    r"|\bnepojazdn\w*|\bbez tp\b|\bbúračk\w*|\bburack\w*", re.I)
+    r"|\bnepojazdn\w*|\bbez tp\b|\bbúračk\w*|\bburack\w*"
+    r"|\bchybn\w* motor|\bvadn\w* motor|\bporucha motor\w*|\bzadret\w*"
+    r"|\bna súčiastky\b|\bna suciastky\b", re.I)
 
 
 def looks_damaged(text: str) -> bool:
@@ -119,6 +121,7 @@ class BazosScraper(BaseScraper):
             city=None,
             # bazos has no damage flag - the seller either writes it or not
             damaged=looks_damaged(text),
+            vin=find_vin(text),
             dealer_id=None,        # bazos exposes no stable seller id in the result list
             dealer_name=None,
         )

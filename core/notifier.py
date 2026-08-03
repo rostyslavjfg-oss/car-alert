@@ -88,6 +88,8 @@ def build_caption(row: dict, old_price=None) -> str:
         where = f"{where}\n{str(row['dealer_name'])[:45]}".strip()
     if where:
         lines.append(where)
+    if row.get("vin"):
+        lines.append(f"VIN: {row['vin']}")
     lines.append(row.get("url") or "")
     return "\n".join(lines)
 

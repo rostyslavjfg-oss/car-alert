@@ -101,6 +101,8 @@ class OpenLaneScraper(BaseScraper):
             country=(auction.get("CarCountryExtended") or "").upper() or None,
             city=None,
             damaged=None,                 # auctions do not expose a damage flag
+            vin=(str(auction.get("ChassisNumber")).strip().upper()
+                 if auction.get("ChassisNumber") else None),
             dealer_id=None,
             dealer_name=None,
         )

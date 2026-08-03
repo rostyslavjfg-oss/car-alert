@@ -39,6 +39,31 @@ FUEL_WORDS = {
     "elektro": "electric", "electric": "electric", "elektrisch": "electric",
     "hybrid": "hybrid", "hybride": "hybrid",
 }
+# a real VIN: 17 chars, no I/O/Q, and at least one digit
+VIN_RE = re.compile(r"\b([A-HJ-NPR-Z0-9]{17})\b")
+
+# German-language damage wording used by mobile.de and autoscout24 titles -
+# the structured flags miss ads where only the seller's text says it
+DE_NEGATED_RE = re.compile(r"unfallfrei\w*|kein\w{0,2}\s+unf[aä]ll\w*|ohne\s+unfall\w*", re.I)
+DE_DAMAGE_RE = re.compile(
+    r"unfallwagen|unfallfahrzeug|unfallschaden|motorschaden|getriebeschaden"
+    r"|bastlerfahrzeug|\bbastler\b|nicht fahrbereit|f[uü]r export|exportfahrzeug", re.I)
+
+
+def find_vin(text: str):
+    """First VIN-looking token in free text, or None."""
+    for match in VIN_RE.findall(text or ""):
+        # a real VIN mixes letters and digits and is not a near-constant string
+        if (any(ch.isdigit() for ch in match) and not match.isdigit()
+                and len(set(match)) >= 6):
+            return match
+    return None
+
+
+def looks_damaged_de(text: str) -> bool:
+    return bool(DE_DAMAGE_RE.search(DE_NEGATED_RE.sub(" ", text or "")))
+
+
 GEARBOX_WORDS = {
     "schaltgetriebe": "manual", "manual": "manual", "manuell": "manual",
     "automatik": "automatic", "automatic": "automatic", "halbautomatik": "automatic",
@@ -64,6 +89,7 @@ class Listing:
     country: Optional[str] = None       # ISO-2, e.g. DE / AT / SK
     city: Optional[str] = None
     damaged: Optional[bool] = None      # None = the source did not say
+    vin: Optional[str] = None           # shown in the alert when the source has it
     # set when a source can only narrow to a model *family* (otomoto knows
     # "seria-3", not "320"); the matcher then trusts the source's own filter
     # instead of dropping everything

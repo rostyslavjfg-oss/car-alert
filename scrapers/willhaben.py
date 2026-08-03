@@ -62,7 +62,9 @@ class WillhabenScraper(BaseScraper):
         is_private = str(at.get("ISPRIVATE", "0")) == "1"
         condition = " ".join(str(at.get(k) or "") for k in
                              ("CONDITION_RESOLVED", "CONDITION_REPORT")).lower()
-        damaged = any(w in condition for w in ("beschädig", "unfall", "havar", "defekt"))
+        from .base import looks_damaged_de
+        damaged = (any(w in condition for w in ("beschädig", "havar"))
+                   or looks_damaged_de(f"{ad.get('description') or ''} {at.get('HEADING') or ''}"))
         return Listing(
             id=f"{self.source}:{ad.get('id')}",
             source=self.source,

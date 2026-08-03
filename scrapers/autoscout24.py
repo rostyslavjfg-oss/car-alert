@@ -10,7 +10,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing
+from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing, looks_damaged_de
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +90,8 @@ class AutoScout24Scraper(BaseScraper):
             title=v.get("modelVersionInput") or raw.get("versionTitle"),
             country=(location.get("countryCode") or "").upper() or None,
             city=location.get("city"),
-            damaged=bool(v.get("isCurrentlyDamaged")),
+            damaged=bool(v.get("isCurrentlyDamaged"))
+            or looks_damaged_de(f"{v.get('modelVersionInput') or ''} {raw.get('url') or ''}"),
             dealer_id=str(seller.get("id")) if seller.get("id") else None,
             dealer_name=seller.get("companyName") or seller.get("contactName"),
         )

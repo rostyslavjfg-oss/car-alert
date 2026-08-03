@@ -12,7 +12,7 @@ way to reach deeper results, so max_pages is turned into one larger request.
 
 import logging
 
-from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing, COUNTRY_MAP
+from .base import MAX_IMAGES, BaseScraper, BotWallError, Listing, COUNTRY_MAP, looks_damaged_de
 
 log = logging.getLogger(__name__)
 
@@ -118,7 +118,9 @@ class MobileDeScraper(BaseScraper):
             title=raw.get("title"),
             country=(attr.get("cn") or "").upper() or None,
             city=attr.get("loc"),
-            damaged=bool(raw.get("hasDamage") or raw.get("isDamageCase")),
+            # the flag misses ads where only the title says "Motorschaden"
+            damaged=bool(raw.get("hasDamage") or raw.get("isDamageCase")
+                         or looks_damaged_de(raw.get("title") or "")),
             dealer_id=dealer_id,
             dealer_name=contact.get("name") or raw.get("st"),
         )
