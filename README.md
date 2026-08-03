@@ -60,12 +60,17 @@ with a single photo (bazos.sk) stay one message.
 
 ### Two ways to run the bot
 
-**Zero hosting (default).** The Actions run calls `main.py --drain`, which
-processes everything you sent since the last cycle. Commands work, but replies
-land up to 30 minutes later.
+**Zero hosting (default, and the only consistent one).** The Actions run calls
+`main.py --drain`, so commands are handled by the same job that owns the
+database. Replies land within the cron interval (10 minutes).
 
-**Instant replies.** Run the long-polling process wherever you like — your Mac,
-a free tier VM:
+**Do not run `bot.py` alongside the cron.** The state lives in `listings.db`,
+which the Actions job commits. A locally running bot writes to *its own copy*:
+searches added there never reach the cron, so they silently produce no alerts,
+and the two files cannot be merged (SQLite is binary). Run `bot.py` only if you
+turn the cron off, or move the state to a shared database first.
+
+**Instant replies** — only with the cron disabled:
 
 ```bash
 export TELEGRAM_BOT_TOKEN=...
